@@ -1,0 +1,17 @@
+# Claude Code Adapter
+
+This project uses Vibe Paper.
+
+## Working scope
+
+- Read the whole experiment project root.
+- Use `paper/context/project_snapshot.md` as the first paper-writing context file.
+- Write LaTeX, bibliography, and figure-support files inside `paper/`.
+
+## Expectations
+
+- Preserve claims and numbers from actual project files.
+- Prefer structured metrics from JSON, CSV, logs, and exported result summaries.
+- Do not invent missing experiments.
+- Use the local Vibe Paper build flow when compilation is required.
+

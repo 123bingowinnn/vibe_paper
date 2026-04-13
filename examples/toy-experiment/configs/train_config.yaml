@@ -1,0 +1,19 @@
+experiment_name: toy_detector_v1
+dataset:
+  name: TinyCampusSet
+  train_split: train
+  valid_split: valid
+  test_split: test
+  classes:
+    - rider
+    - helmet
+    - without_helmet
+model:
+  backbone: yolov8n
+  imgsz: 800
+  epochs: 120
+  batch_size: 16
+runtime:
+  device: cuda
+  optimizer: AdamW
+

@@ -1,0 +1,13 @@
+@echo off
+setlocal
+
+set "SCRIPT_DIR=%~dp0"
+set "VIBE_PAPER_HOME=D:\Vibe-Paper"
+set "UNCONFIGURED_VIBE_PAPER_HOME=__UNCONFIGURED_VIBE_PAPER_HOME__"
+if "%VIBE_PAPER_HOME%"=="%UNCONFIGURED_VIBE_PAPER_HOME%" (
+    for %%I in ("%SCRIPT_DIR%..\..") do set "VIBE_PAPER_HOME=%%~fI"
+)
+set "PYTHONPATH=%VIBE_PAPER_HOME%;%PYTHONPATH%"
+python "%SCRIPT_DIR%scripts\run_vibe_build.py"
+set "EXIT_CODE=%ERRORLEVEL%"
+exit /b %EXIT_CODE%
