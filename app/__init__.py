@@ -1,2 +1,1 @@
-"""Flask app for Vibe Paper."""
-
+"""Desktop app package for Vibe Paper."""

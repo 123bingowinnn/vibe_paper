@@ -23,7 +23,7 @@ Run:
 powershell -ExecutionPolicy Bypass -File .\tools\check-latex-env.ps1
 ```
 
-If `pdflatex`, `bibtex`, or `Flask` is missing, fix that first.
+If `pdflatex`, `bibtex`, `pdftoppm`, or `PyQt5` is missing, fix that first.
 
 ### 2. Initialize the example project
 
@@ -106,13 +106,6 @@ Then start the desktop app:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper.ps1 `
-  -ProjectRoot D:\MyProject
-```
-
-If you prefer the browser shell instead, run:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper-web.ps1 `
   -ProjectRoot D:\MyProject
 ```
 

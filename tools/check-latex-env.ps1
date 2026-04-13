@@ -18,17 +18,6 @@ foreach ($cmd in $commands) {
 
 if ($found.ContainsKey("python")) {
     try {
-        & $found["python"] -c "import flask" 2>$null
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "[OK] flask -> Python module import succeeded" -ForegroundColor Green
-        } else {
-            Write-Host "[Missing] flask Python package" -ForegroundColor Yellow
-        }
-    } catch {
-        Write-Host "[Missing] flask Python package" -ForegroundColor Yellow
-    }
-
-    try {
         & $found["python"] -c "import PyQt5" 2>$null
         if ($LASTEXITCODE -eq 0) {
             Write-Host "[OK] PyQt5 -> Python module import succeeded" -ForegroundColor Green
@@ -71,5 +60,4 @@ Write-Host ""
 Write-Host "Recommended minimum stack:" -ForegroundColor Cyan
 Write-Host "- MiKTeX or TeX Live"
 Write-Host "- Python 3.10+"
-Write-Host "- Flask"
 Write-Host "- PyQt5"

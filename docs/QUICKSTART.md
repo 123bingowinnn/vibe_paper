@@ -43,8 +43,6 @@ The native desktop window gives you:
 - a collapsible build log
 - PDF preview based on `paper/build/main_preview.pdf`
 
-If you need the legacy browser shell, use `tools\start-vibe-paper-web.ps1`.
-
 ## Agent workflow
 
 Point your agent at the experiment project root, not only at `paper/`.

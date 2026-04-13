@@ -14,6 +14,6 @@ This separation matters:
 
 - the experiment project remains the factual source of code, metrics, and artifacts
 - the paper workspace remains the writable LaTeX output layer
-- the desktop app remains the local Overleaf-like shell for preview and compilation, while the web app is an optional fallback
+- the desktop app remains the local Overleaf-like shell for preview and compilation
 
 The human still owns claims and scientific judgment. Agents help with drafting, structure, consistency, figure placement, bibliography work, and iterative rewriting, but the paper should stay grounded in the real project files.
