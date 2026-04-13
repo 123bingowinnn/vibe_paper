@@ -5,11 +5,12 @@ from pathlib import Path
 
 try:
     from PyQt5.QtCore import QDir, Qt, QSize, QUrl
-    from PyQt5.QtGui import QDesktopServices, QFont, QImage, QPixmap
+    from PyQt5.QtGui import QColor, QDesktopServices, QFont, QImage, QPixmap
     from PyQt5.QtWidgets import (
         QApplication,
         QFileSystemModel,
         QFrame,
+        QGraphicsDropShadowEffect,
         QHBoxLayout,
         QLabel,
         QMainWindow,
@@ -39,7 +40,7 @@ TEXTS = {
     "en": {
         "windowTitle": "Vibe Paper",
         "title": "Vibe Paper",
-        "subtitle": "Local-first paper writing for real experiment projects",
+        "subtitle": "Local-first paper workspace",
         "projectPrefix": "Project",
         "files": "Files",
         "source": "Source",
@@ -50,11 +51,11 @@ TEXTS = {
         "refresh": "Refresh Preview",
         "openFormal": "Open Formal PDF",
         "previewTitle": "PDF Preview",
-        "previewSubtitle": "Preview-first mode. Expand the side panels only when you need them.",
+        "previewSubtitle": "",
         "sourceTitle": "LaTeX Source",
-        "sourceSubtitle": "Double-click a text file in the project tree to edit it here.",
+        "sourceSubtitle": "",
         "logTitle": "Build Log",
-        "logSubtitle": "Compilation output appears here after each build.",
+        "logSubtitle": "",
         "pathPrefix": "Current file",
         "noPreview": "No preview PDF is available yet. Compile the paper or refresh after LaTeX changes.",
         "contextDone": "Project snapshot regenerated.",
@@ -74,7 +75,7 @@ TEXTS = {
     "zh": {
         "windowTitle": "Vibe Paper",
         "title": "Vibe Paper",
-        "subtitle": "面向真实实验项目的本地优先论文工作台",
+        "subtitle": "本地优先论文工作台",
         "projectPrefix": "当前项目",
         "files": "目录",
         "source": "源码",
@@ -85,11 +86,11 @@ TEXTS = {
         "refresh": "刷新预览",
         "openFormal": "打开正式 PDF",
         "previewTitle": "PDF 预览",
-        "previewSubtitle": "默认只看预览，需要时再展开侧边栏。",
+        "previewSubtitle": "",
         "sourceTitle": "LaTeX 源码",
-        "sourceSubtitle": "在项目树中双击文本文件，就可以在这里编辑。",
+        "sourceSubtitle": "",
         "logTitle": "编译日志",
-        "logSubtitle": "每次编译后的输出都会显示在这里。",
+        "logSubtitle": "",
         "pathPrefix": "当前文件",
         "noPreview": "还没有可用的预览 PDF。先编译论文，或在 LaTeX 修改后手动刷新。",
         "contextDone": "项目快照已重新生成。",
@@ -111,37 +112,40 @@ TEXTS = {
 
 APP_STYLESHEET = """
 QMainWindow {
-    background: #eef3f9;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+        stop:0 rgba(232, 238, 248, 255),
+        stop:0.55 rgba(239, 243, 250, 255),
+        stop:1 rgba(231, 238, 246, 255));
 }
 QFrame#TopBar,
 QFrame#PanelCard,
 QFrame#PreviewPanel,
 QFrame#LogPanel,
 QFrame#PageCard {
-    background: #ffffff;
-    border: 1px solid #d8e2f0;
-    border-radius: 18px;
+    background: rgba(255, 255, 255, 166);
+    border: 1px solid rgba(255, 255, 255, 150);
+    border-radius: 20px;
 }
 QFrame#TopBar {
-    border-radius: 22px;
+    border-radius: 24px;
 }
 QLabel#AppTitle {
     color: #1a2433;
-    font-size: 28px;
+    font-size: 30px;
     font-weight: 700;
 }
 QLabel#AppSubtitle,
 QLabel#PanelSubtitle,
 QLabel#ProjectChip,
 QLabel#PathLabel {
-    color: #5b6b81;
+    color: rgba(50, 66, 87, 185);
     font-size: 12px;
 }
 QLabel#ProjectChip {
-    padding: 8px 12px;
+    padding: 7px 12px;
     border-radius: 14px;
-    background: #edf3ff;
-    border: 1px solid #d7e4fb;
+    background: rgba(240, 245, 255, 155);
+    border: 1px solid rgba(255, 255, 255, 170);
 }
 QLabel#PanelTitle {
     color: #1d2736;
@@ -152,40 +156,40 @@ QPushButton {
     min-height: 38px;
     padding: 0 16px;
     border-radius: 16px;
-    border: 1px solid #d5dfed;
-    background: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 175);
+    background: rgba(255, 255, 255, 148);
     color: #243145;
     font-size: 13px;
     font-weight: 600;
 }
 QPushButton:hover {
-    background: #f5f8fd;
-    border-color: #c1d0e5;
+    background: rgba(255, 255, 255, 182);
+    border-color: rgba(255, 255, 255, 205);
 }
 QPushButton:pressed {
-    background: #ebf2fb;
+    background: rgba(226, 235, 250, 188);
 }
 QPushButton[accent="true"] {
-    background: #3f6ee8;
+    background: rgba(63, 110, 232, 225);
     color: #ffffff;
-    border: 1px solid #3f6ee8;
+    border: 1px solid rgba(63, 110, 232, 240);
 }
 QPushButton[accent="true"]:hover {
-    background: #315ed2;
-    border-color: #315ed2;
+    background: rgba(49, 94, 210, 236);
+    border-color: rgba(49, 94, 210, 246);
 }
 QPushButton[toggleButton="true"] {
-    background: #f8fbff;
+    background: rgba(255, 255, 255, 128);
 }
 QPushButton[toggleButton="true"]:checked {
-    background: #e6efff;
-    border-color: #9eb8f3;
+    background: rgba(232, 240, 255, 182);
+    border-color: rgba(170, 194, 244, 220);
     color: #244aa5;
 }
 QTreeView,
 QPlainTextEdit {
-    background: #fbfdff;
-    border: 1px solid #d9e3f2;
+    background: rgba(255, 255, 255, 106);
+    border: 1px solid rgba(255, 255, 255, 150);
     border-radius: 14px;
     color: #1f2b3a;
     selection-background-color: #dfeaff;
@@ -254,9 +258,10 @@ class VibePaperDesktop(QMainWindow):
 
         top_bar = QFrame(central)
         top_bar.setObjectName("TopBar")
+        self._apply_shadow(top_bar, blur=28, alpha=60)
         top_layout = QHBoxLayout(top_bar)
-        top_layout.setContentsMargins(20, 18, 20, 18)
-        top_layout.setSpacing(16)
+        top_layout.setContentsMargins(20, 16, 20, 16)
+        top_layout.setSpacing(14)
 
         title_column = QVBoxLayout()
         title_column.setSpacing(4)
@@ -315,6 +320,7 @@ class VibePaperDesktop(QMainWindow):
             self.file_tree.hideColumn(column)
         self.file_tree.setMinimumWidth(250)
         self.files_panel = self._wrap_panel(self.file_tree)
+        self._apply_shadow(self.files_panel, blur=24, alpha=40)
 
         source_body = QWidget(self)
         source_layout = QVBoxLayout(source_body)
@@ -326,12 +332,14 @@ class VibePaperDesktop(QMainWindow):
         source_layout.addWidget(self.path_label)
         source_layout.addWidget(self.editor, stretch=1)
         self.source_panel = self._wrap_panel(source_body)
+        self._apply_shadow(self.source_panel, blur=24, alpha=40)
 
         preview_panel = QFrame(self)
         preview_panel.setObjectName("PreviewPanel")
+        self._apply_shadow(preview_panel, blur=26, alpha=45)
         preview_panel_layout = QVBoxLayout(preview_panel)
-        preview_panel_layout.setContentsMargins(16, 16, 16, 16)
-        preview_panel_layout.setSpacing(10)
+        preview_panel_layout.setContentsMargins(16, 14, 16, 16)
+        preview_panel_layout.setSpacing(8)
         self.preview_title = QLabel(preview_panel)
         self.preview_title.setObjectName("PanelTitle")
         self.preview_subtitle = QLabel(preview_panel)
@@ -346,8 +354,8 @@ class VibePaperDesktop(QMainWindow):
 
         self.preview_container = QWidget(self.preview_scroll)
         self.preview_layout = QVBoxLayout(self.preview_container)
-        self.preview_layout.setContentsMargins(10, 12, 10, 12)
-        self.preview_layout.setSpacing(20)
+        self.preview_layout.setContentsMargins(8, 10, 8, 10)
+        self.preview_layout.setSpacing(18)
         self.preview_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
         self.preview_placeholder = QLabel(self.preview_container)
@@ -372,6 +380,7 @@ class VibePaperDesktop(QMainWindow):
 
         log_panel = QFrame(self)
         log_panel.setObjectName("LogPanel")
+        self._apply_shadow(log_panel, blur=24, alpha=40)
         log_layout = QVBoxLayout(log_panel)
         log_layout.setContentsMargins(16, 16, 16, 16)
         log_layout.setSpacing(8)
@@ -428,6 +437,13 @@ class VibePaperDesktop(QMainWindow):
         panel._panel_title = return_title  # type: ignore[attr-defined]
         panel._panel_subtitle = return_subtitle  # type: ignore[attr-defined]
         return panel
+
+    def _apply_shadow(self, widget: QWidget, blur: int = 24, alpha: int = 46) -> None:
+        shadow = QGraphicsDropShadowEffect(widget)
+        shadow.setBlurRadius(blur)
+        shadow.setOffset(0, 12)
+        shadow.setColor(QColor(120, 139, 166, alpha))
+        widget.setGraphicsEffect(shadow)
 
     def _bind_actions(self) -> None:
         self.generate_button.clicked.connect(self.generate_context)
@@ -488,6 +504,10 @@ class VibePaperDesktop(QMainWindow):
             self.path_label.setText(text["sourceSubtitle"])
         if not self.page_pixmaps:
             self.preview_placeholder.setText(text["noPreview"])
+        self.preview_subtitle.setVisible(bool(text["previewSubtitle"]))
+        self.files_panel._panel_subtitle.setVisible(bool(text["sourceSubtitle"]))  # type: ignore[attr-defined]
+        self.source_panel._panel_subtitle.setVisible(bool(text["sourceSubtitle"]))  # type: ignore[attr-defined]
+        self.log_subtitle.setVisible(bool(text["logSubtitle"]))
         self.status_bar.showMessage(text["statusReady"], 2500)
 
     def _apply_panel_visibility(self) -> None:
@@ -614,9 +634,10 @@ class VibePaperDesktop(QMainWindow):
             pixmap = QPixmap.fromImage(image)
             page_card = QFrame(self.preview_container)
             page_card.setObjectName("PageCard")
+            self._apply_shadow(page_card, blur=18, alpha=32)
             page_layout = QVBoxLayout(page_card)
-            page_layout.setContentsMargins(18, 18, 18, 18)
-            page_layout.setSpacing(10)
+            page_layout.setContentsMargins(14, 14, 14, 14)
+            page_layout.setSpacing(8)
 
             page_hint = QLabel(f"Page {page_number}", page_card)
             page_hint.setObjectName("PanelSubtitle")
