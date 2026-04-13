@@ -1,6 +1,6 @@
 param()
 
-$commands = @("pdflatex", "bibtex", "python")
+$commands = @("pdflatex", "bibtex", "python", "pdftoppm")
 $found = @{}
 
 Write-Host "Checking Vibe Paper local environment..." -ForegroundColor Cyan
@@ -27,19 +27,41 @@ if ($found.ContainsKey("python")) {
     } catch {
         Write-Host "[Missing] flask Python package" -ForegroundColor Yellow
     }
+
+    try {
+        & $found["python"] -c "import PyQt5" 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "[OK] PyQt5 -> Python module import succeeded" -ForegroundColor Green
+        } else {
+            Write-Host "[Missing] PyQt5 Python package" -ForegroundColor Yellow
+        }
+    } catch {
+        Write-Host "[Missing] PyQt5 Python package" -ForegroundColor Yellow
+    }
 }
 
-$commonPdflatex = @(
-    (Join-Path $env:LOCALAPPDATA "Programs\MiKTeX\miktex\bin\x64\pdflatex.exe"),
-    (Join-Path $env:ProgramFiles "MiKTeX\miktex\bin\x64\pdflatex.exe"),
-    (Join-Path ${env:ProgramFiles(x86)} "MiKTeX\miktex\bin\x64\pdflatex.exe")
+$commonTexTools = @(
+    (Join-Path $env:LOCALAPPDATA "Programs\MiKTeX\miktex\bin\x64"),
+    (Join-Path $env:ProgramFiles "MiKTeX\miktex\bin\x64"),
+    (Join-Path ${env:ProgramFiles(x86)} "MiKTeX\miktex\bin\x64")
 )
 
 if (-not $found.ContainsKey("pdflatex")) {
-    foreach ($candidate in $commonPdflatex) {
+    foreach ($baseDir in $commonTexTools) {
+        $candidate = Join-Path $baseDir "pdflatex.exe"
         if (Test-Path $candidate) {
             Write-Host ""
             Write-Host ("Found pdflatex outside PATH: {0}" -f $candidate) -ForegroundColor Yellow
+            break
+        }
+    }
+}
+
+if (-not $found.ContainsKey("pdftoppm")) {
+    foreach ($baseDir in $commonTexTools) {
+        $candidate = Join-Path $baseDir "pdftoppm.exe"
+        if (Test-Path $candidate) {
+            Write-Host ("Found pdftoppm outside PATH: {0}" -f $candidate) -ForegroundColor Yellow
             break
         }
     }
@@ -50,3 +72,4 @@ Write-Host "Recommended minimum stack:" -ForegroundColor Cyan
 Write-Host "- MiKTeX or TeX Live"
 Write-Host "- Python 3.10+"
 Write-Host "- Flask"
+Write-Host "- PyQt5"

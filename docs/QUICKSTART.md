@@ -4,7 +4,7 @@
 
 1. Run `tools\check-latex-env.ps1`.
 2. Initialize `paper/` inside `examples\toy-experiment`.
-3. Start the web app with `tools\start-vibe-paper.ps1`.
+3. Start the desktop app with `tools\start-vibe-paper.ps1`.
 4. Open the project root in your agent and let it work against the same files.
 
 ## Initialize a project-aware paper workspace
@@ -27,20 +27,23 @@ This creates:
 - `paper/build/`
 - `paper/context/project_snapshot.md`
 
-## Start the local web app
+## Start the local desktop app
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper.ps1 `
   -ProjectRoot .\examples\toy-experiment
 ```
 
-The browser UI gives you:
+The native desktop window gives you:
 
-- a file tree rooted at the whole experiment project
-- a text editor for LaTeX and related source files
+- a preview-first PDF window
+- a collapsible file tree rooted at the whole experiment project
+- an optional text editor for LaTeX and related source files
 - compile and context-generation buttons
-- build logs
+- a collapsible build log
 - PDF preview based on `paper/build/main_preview.pdf`
+
+If you need the legacy browser shell, use `tools\start-vibe-paper-web.ps1`.
 
 ## Agent workflow
 

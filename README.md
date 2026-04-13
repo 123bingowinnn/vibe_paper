@@ -2,7 +2,7 @@
 
 A local-first, agent-native paper workspace for writing LaTeX papers directly inside real experiment projects.
 
-Vibe Paper is built for a workflow where the experiment repository remains the root workspace, agents such as Codex, Cursor, and Claude Code read the real code, configs, logs, and result files, the paper lives in `paper/` inside the same project, compilation happens locally with LaTeX, and a lightweight web app provides editing, build logs, and PDF preview without depending on VS Code preview.
+Vibe Paper is built for a workflow where the experiment repository remains the root workspace, agents such as Codex, Cursor, and Claude Code read the real code, configs, logs, and result files, the paper lives in `paper/` inside the same project, compilation happens locally with LaTeX, and a native desktop app provides editing, build logs, and PDF preview without depending on VS Code preview.
 
 ## Core Idea
 
@@ -15,7 +15,8 @@ That makes the workflow much closer to a local, single-user version of Overleaf,
 - a project-aware `paper/` initializer
 - a reusable IEEE-style paper template
 - a stable local LaTeX build backend
-- a local web app for editing, compiling, logging, and previewing PDFs
+- a native desktop preview app with optional source and file panels
+- an optional local web app fallback
 - automatic generation of `paper/context/project_snapshot.md`
 - adapters for Codex, Cursor, and Claude Code
 - example projects for smoke testing the workflow
@@ -74,21 +75,29 @@ and also generates:
 examples\toy-experiment\paper\context\project_snapshot.md
 ```
 
-### 3. Start the local web app
+### 3. Start the local desktop app
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper.ps1 `
   -ProjectRoot .\examples\toy-experiment
 ```
 
-The browser UI provides:
+The desktop UI opens a native window and provides:
 
-- a project file tree
-- a built-in text editor
+- a PDF preview-first experience
+- a collapsible project file tree
+- an optional built-in text editor
 - one-click context generation
 - one-click compilation
-- build logs
-- PDF preview through `main_preview.pdf`
+- a collapsible build log panel
+- preview rendering through `main_preview.pdf`
+
+If you still prefer the original browser shell, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper-web.ps1 `
+  -ProjectRoot .\examples\toy-experiment
+```
 
 ### 4. Point your agent at the same project root
 
@@ -114,12 +123,12 @@ This gives all agents a common paper-writing entry point.
 
 ## Why `main_preview.pdf` Exists
 
-Local editor preview can occasionally open a half-written PDF during compilation on Windows. Vibe Paper therefore keeps:
+Local preview shells can occasionally open a half-written PDF during compilation on Windows. Vibe Paper therefore keeps:
 
 - `main.pdf` as the formal output
-- `main_preview.pdf` as the safer preview copy
+- `main_preview.pdf` as the safer preview copy for the desktop app and the optional web fallback
 
-The web app always prefers the preview copy.
+The desktop app always prefers the preview copy.
 
 ## Adapters
 

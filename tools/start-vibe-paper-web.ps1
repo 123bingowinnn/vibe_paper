@@ -1,8 +1,9 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$ProjectRoot,
-    [ValidateSet("en", "zh")]
-    [string]$Lang = "zh"
+    [string]$BindHost = "127.0.0.1",
+    [int]$Port = 8765,
+    [switch]$NoBrowser
 )
 
 $repoRoot = Split-Path $PSScriptRoot -Parent
@@ -13,7 +14,10 @@ if (-not $python) {
 
 Push-Location $repoRoot
 try {
-    $argsList = @("-m", "app.desktop", "--project-root", $ProjectRoot, "--lang", $Lang)
+    $argsList = @("-m", "app.server", "--project-root", $ProjectRoot, "--host", $BindHost, "--port", $Port)
+    if (-not $NoBrowser) {
+        $argsList += "--open-browser"
+    }
     & $python.Source @argsList
     if ($LASTEXITCODE -ne 0) {
         exit $LASTEXITCODE

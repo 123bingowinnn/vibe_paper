@@ -11,7 +11,7 @@ Vibe Paper does not replace LaTeX. It wraps a local LaTeX workflow so that:
 - your experiment project remains the real source of evidence
 - your paper lives in `paper/` inside that same project
 - an agent can read the code, configs, logs, and results before it writes
-- a local web app gives you editing, compile logs, and PDF preview in one place
+- a local desktop app gives you PDF preview, compile logs, and optional editing in one place
 
 ## The shortest path to a working demo
 
@@ -41,7 +41,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\init-vibe-paper.ps1 `
 
 This creates `paper/` inside the example experiment and generates `paper/context/project_snapshot.md`.
 
-### 3. Start the web app
+### 3. Start the desktop app
 
 Run:
 
@@ -50,16 +50,16 @@ powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper.ps1 `
   -ProjectRoot .\examples\toy-experiment
 ```
 
-Then open the browser page.
+Then a native preview window opens on your desktop.
 
 ## What you will see
 
-The page has four main areas:
+The desktop app has four main areas:
 
-- the left side shows the whole project file tree
-- the middle editor lets you edit `paper/main.tex` and other text files
-- the right side previews `paper/build/main_preview.pdf`
-- the bottom log panel shows the LaTeX build output
+- the center previews `paper/build/main_preview.pdf`
+- the left file tree can be shown or hidden
+- the source editor can be shown or hidden
+- the bottom log panel can be shown or hidden
 
 ## What the top buttons do
 
@@ -68,6 +68,7 @@ The page has four main areas:
 - `Compile Paper`: runs the local LaTeX build backend
 - `Refresh Preview`: reloads the preview PDF
 - `Open Formal PDF`: opens `paper/build/main.pdf`
+- `Files`, `Source`, and `Log`: toggle the optional side panels
 - the language toggle switches the UI between English and Chinese
 
 ## How to use it with an agent
@@ -101,10 +102,17 @@ powershell -ExecutionPolicy Bypass -File .\tools\init-vibe-paper.ps1 `
   -Email "you@example.com"
 ```
 
-Then start the web app:
+Then start the desktop app:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper.ps1 `
+  -ProjectRoot D:\MyProject
+```
+
+If you prefer the browser shell instead, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper-web.ps1 `
   -ProjectRoot D:\MyProject
 ```
 
