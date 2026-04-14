@@ -37,10 +37,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\open-preview.ps1 `
 The native popup window gives you:
 
 - a preview-first PDF window
-- a collapsible file tree rooted at the whole experiment project
-- an optional text editor for LaTeX and related source files
-- compile and context-generation buttons
-- a collapsible build log
+- a minimal HUD for update, open-PDF, and file access
+- one optional file browser button
+- hidden advanced panels for files, source, and logs via shortcuts
 - PDF preview based on `paper/build/main_preview.pdf`
 
 ## Agent workflow

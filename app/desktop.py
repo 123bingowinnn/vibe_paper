@@ -4,8 +4,8 @@ import argparse
 from pathlib import Path
 
 try:
-    from PyQt5.QtCore import QDir, Qt, QSize, QTimer, QUrl
-    from PyQt5.QtGui import QColor, QDesktopServices, QFont, QImage, QPixmap
+    from PyQt5.QtCore import QDir, QSize, Qt, QTimer, QUrl
+    from PyQt5.QtGui import QColor, QDesktopServices, QFont, QImage, QKeySequence, QPixmap
     from PyQt5.QtWidgets import (
         QApplication,
         QDockWidget,
@@ -19,6 +19,7 @@ try:
         QPlainTextEdit,
         QPushButton,
         QScrollArea,
+        QShortcut,
         QSizePolicy,
         QStatusBar,
         QTreeView,
@@ -42,54 +43,52 @@ TEXTS = {
         "files": "Files",
         "source": "Source",
         "log": "Log",
-        "generate": "Context",
-        "save": "Save",
-        "compile": "Compile",
-        "refresh": "Refresh",
-        "openFormal": "Open PDF",
+        "compile": "Update",
+        "openFormal": "PDF",
+        "lang": "中",
         "pathPrefix": "Current file",
-        "noPreview": "No preview PDF is available yet. Compile the paper or refresh after LaTeX changes.",
+        "statusReady": "Ready",
+        "statusPreview": "Preview-only",
+        "statusCompiling": "Updating",
+        "statusNoPreview": "No preview yet",
+        "noPreview": "No preview PDF is available yet. Use Update after LaTeX changes.",
         "contextDone": "Project snapshot regenerated.",
         "fileSaved": "File saved.",
         "compileDone": "Paper compiled successfully.",
         "compileFailed": "Paper compilation failed. Open the log panel for details.",
-        "previewDone": "Preview refreshed.",
+        "previewDone": "Preview updated.",
         "fileNotEditable": "This file type is not editable in the built-in editor.",
-        "previewError": "Preview refresh failed",
+        "previewError": "Preview update failed",
         "saveError": "Save failed",
         "compileError": "Compile failed",
         "contextError": "Context generation failed",
         "openPdfError": "Formal PDF is not available yet.",
-        "lang": "中文",
-        "statusReady": "Ready",
-        "hint": "Preview-first mode",
     },
     "zh": {
         "windowTitle": "Vibe Paper",
         "files": "目录",
         "source": "源码",
         "log": "日志",
-        "generate": "上下文",
-        "save": "保存",
-        "compile": "编译",
-        "refresh": "刷新",
+        "compile": "更新",
         "openFormal": "PDF",
+        "lang": "EN",
         "pathPrefix": "当前文件",
-        "noPreview": "还没有可用的预览 PDF。先编译论文，或在 LaTeX 修改后手动刷新。",
+        "statusReady": "已就绪",
+        "statusPreview": "预览优先",
+        "statusCompiling": "更新中",
+        "statusNoPreview": "暂无预览",
+        "noPreview": "还没有可用的预览 PDF。修改 LaTeX 后点一次更新即可。",
         "contextDone": "项目快照已重新生成。",
         "fileSaved": "文件已保存。",
         "compileDone": "论文编译成功。",
         "compileFailed": "论文编译失败，请展开日志面板查看详细信息。",
-        "previewDone": "预览已刷新。",
+        "previewDone": "预览已更新。",
         "fileNotEditable": "这种文件类型暂不支持在内置编辑器里修改。",
-        "previewError": "预览刷新失败",
+        "previewError": "预览更新失败",
         "saveError": "保存失败",
         "compileError": "编译失败",
         "contextError": "上下文生成失败",
         "openPdfError": "正式 PDF 还不存在。",
-        "lang": "EN",
-        "statusReady": "已就绪",
-        "hint": "预览优先模式",
     },
 }
 
@@ -97,63 +96,85 @@ TEXTS = {
 APP_STYLESHEET = """
 QMainWindow {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-        stop:0 rgba(229, 236, 248, 255),
-        stop:0.58 rgba(238, 243, 250, 255),
-        stop:1 rgba(228, 235, 245, 255));
+        stop:0 rgba(232, 238, 247, 255),
+        stop:0.56 rgba(241, 245, 251, 255),
+        stop:1 rgba(230, 236, 245, 255));
 }
 QFrame#OverlayBar {
-    background: rgba(255, 255, 255, 146);
-    border: 1px solid rgba(255, 255, 255, 176);
-    border-radius: 17px;
+    background: rgba(255, 255, 255, 128);
+    border: 1px solid rgba(255, 255, 255, 156);
+    border-radius: 14px;
+}
+QFrame#BusyOverlay {
+    background: rgba(234, 240, 249, 148);
+    border-radius: 18px;
+}
+QLabel#BusyChip {
+    padding: 3px 10px;
+    border-radius: 11px;
+    background: rgba(67, 109, 225, 46);
+    border: 1px solid rgba(67, 109, 225, 108);
+    color: #2f58bf;
+    font-size: 10px;
+    font-weight: 700;
+}
+QFrame#BusyCard {
+    background: rgba(255, 255, 255, 212);
+    border: 1px solid rgba(255, 255, 255, 226);
+    border-radius: 18px;
+}
+QLabel#BusyTitle {
+    color: #20469f;
+    font-size: 16px;
+    font-weight: 700;
+}
+QLabel#BusyBody {
+    color: rgba(43, 58, 82, 186);
+    font-size: 11px;
 }
 QFrame#PageFrame {
     background: rgba(255, 255, 255, 242);
     border: 1px solid rgba(255, 255, 255, 214);
-    border-radius: 22px;
+    border-radius: 20px;
 }
 QLabel#BrandLabel {
-    color: #172233;
-    font-size: 13px;
+    color: #162338;
+    font-size: 12px;
     font-weight: 700;
 }
 QLabel#MetaLabel {
-    color: rgba(44, 58, 78, 172);
-    font-size: 11px;
+    color: rgba(47, 60, 82, 148);
+    font-size: 10px;
 }
 QLabel#PageHintLabel,
 QLabel#PathLabel {
-    color: rgba(55, 68, 88, 158);
+    color: rgba(55, 68, 88, 148);
     font-size: 11px;
 }
 QPushButton {
-    min-height: 28px;
-    padding: 0 10px;
-    border-radius: 13px;
-    border: 1px solid rgba(255, 255, 255, 176);
-    background: rgba(255, 255, 255, 118);
-    color: #213048;
-    font-size: 11px;
+    min-height: 24px;
+    padding: 0 9px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 166);
+    background: rgba(255, 255, 255, 100);
+    color: #223047;
+    font-size: 10px;
     font-weight: 600;
 }
 QPushButton:hover {
-    background: rgba(255, 255, 255, 158);
-    border-color: rgba(255, 255, 255, 214);
+    background: rgba(255, 255, 255, 144);
+    border-color: rgba(255, 255, 255, 206);
 }
 QPushButton:pressed {
-    background: rgba(230, 237, 248, 176);
+    background: rgba(232, 238, 248, 152);
 }
 QPushButton[accent="true"] {
-    background: rgba(61, 107, 224, 214);
-    border: 1px solid rgba(61, 107, 224, 228);
+    background: rgba(68, 109, 225, 204);
+    border: 1px solid rgba(68, 109, 225, 216);
     color: white;
 }
 QPushButton[accent="true"]:hover {
-    background: rgba(47, 90, 202, 228);
-}
-QPushButton[toggleButton="true"]:checked {
-    background: rgba(235, 242, 255, 172);
-    border-color: rgba(170, 194, 244, 206);
-    color: #244aa5;
+    background: rgba(54, 95, 209, 222);
 }
 QDockWidget {
     color: #1f2b3a;
@@ -162,16 +183,16 @@ QDockWidget::title {
     text-align: left;
     padding-left: 12px;
     height: 28px;
-    background: rgba(255, 255, 255, 176);
-    border: 1px solid rgba(255, 255, 255, 185);
+    background: rgba(255, 255, 255, 174);
+    border: 1px solid rgba(255, 255, 255, 184);
     border-radius: 12px;
     color: #243145;
     font-weight: 600;
 }
 QTreeView,
 QPlainTextEdit {
-    background: rgba(255, 255, 255, 148);
-    border: 1px solid rgba(255, 255, 255, 182);
+    background: rgba(255, 255, 255, 146);
+    border: 1px solid rgba(255, 255, 255, 180);
     border-radius: 14px;
     color: #1f2b3a;
     selection-background-color: #dfeaff;
@@ -198,7 +219,7 @@ QScrollArea {
 }
 QStatusBar {
     background: transparent;
-    color: rgba(57, 71, 92, 180);
+    color: rgba(57, 71, 92, 176);
 }
 """
 
@@ -239,10 +260,10 @@ class VibePaperDesktop(QMainWindow):
 
         self.overlay_bar = QFrame(central)
         self.overlay_bar.setObjectName("OverlayBar")
-        self._apply_shadow(self.overlay_bar, blur=24, alpha=28, offset_y=4)
+        self._apply_shadow(self.overlay_bar, blur=22, alpha=24, offset_y=4)
         overlay_layout = QHBoxLayout(self.overlay_bar)
-        overlay_layout.setContentsMargins(14, 6, 14, 6)
-        overlay_layout.setSpacing(8)
+        overlay_layout.setContentsMargins(12, 5, 12, 5)
+        overlay_layout.setSpacing(7)
 
         self.brand_label = QLabel(self.overlay_bar)
         self.brand_label.setObjectName("BrandLabel")
@@ -252,25 +273,20 @@ class VibePaperDesktop(QMainWindow):
         overlay_layout.addWidget(self.meta_label)
         overlay_layout.addStretch(1)
 
-        self.generate_button = self._make_button(accent=False)
-        self.save_button = self._make_button(accent=False)
+        self.busy_chip = QLabel(self.overlay_bar)
+        self.busy_chip.setObjectName("BusyChip")
+        self.busy_chip.hide()
+        overlay_layout.addWidget(self.busy_chip)
+
         self.compile_button = self._make_button(accent=True)
-        self.refresh_button = self._make_button(accent=False)
-        self.open_formal_button = self._make_button(accent=False)
-        self.files_button = self._make_button(toggle=True)
-        self.source_button = self._make_button(toggle=True)
-        self.log_button = self._make_button(toggle=True)
-        self.lang_button = self._make_button(accent=False)
+        self.open_formal_button = self._make_button()
+        self.files_button = self._make_button()
+        self.lang_button = self._make_button()
 
         for button in (
-            self.generate_button,
-            self.save_button,
             self.compile_button,
-            self.refresh_button,
             self.open_formal_button,
             self.files_button,
-            self.source_button,
-            self.log_button,
             self.lang_button,
         ):
             overlay_layout.addWidget(button)
@@ -282,8 +298,8 @@ class VibePaperDesktop(QMainWindow):
 
         self.preview_container = QWidget(self.preview_scroll)
         self.preview_layout = QVBoxLayout(self.preview_container)
-        self.preview_layout.setContentsMargins(6, 60, 6, 20)
-        self.preview_layout.setSpacing(20)
+        self.preview_layout.setContentsMargins(6, 48, 6, 16)
+        self.preview_layout.setSpacing(16)
         self.preview_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
 
         self.preview_placeholder = QLabel(self.preview_container)
@@ -296,10 +312,35 @@ class VibePaperDesktop(QMainWindow):
         self.preview_layout.addWidget(self.preview_placeholder)
 
         self.preview_scroll.setWidget(self.preview_container)
-
         root_layout.addWidget(self.preview_scroll, 1)
         self.setCentralWidget(central)
         self.overlay_bar.raise_()
+
+        self.preview_busy_overlay = QFrame(self.preview_scroll.viewport())
+        self.preview_busy_overlay.setObjectName("BusyOverlay")
+        self.preview_busy_overlay.hide()
+
+        busy_overlay_layout = QVBoxLayout(self.preview_busy_overlay)
+        busy_overlay_layout.setContentsMargins(0, 0, 0, 0)
+        busy_overlay_layout.setAlignment(Qt.AlignCenter)
+
+        self.busy_card = QFrame(self.preview_busy_overlay)
+        self.busy_card.setObjectName("BusyCard")
+        self._apply_shadow(self.busy_card, blur=24, alpha=24, offset_y=6)
+        busy_card_layout = QVBoxLayout(self.busy_card)
+        busy_card_layout.setContentsMargins(22, 18, 22, 18)
+        busy_card_layout.setSpacing(6)
+
+        self.busy_title = QLabel(self.busy_card)
+        self.busy_title.setObjectName("BusyTitle")
+        self.busy_title.setAlignment(Qt.AlignCenter)
+        self.busy_body = QLabel(self.busy_card)
+        self.busy_body.setObjectName("BusyBody")
+        self.busy_body.setAlignment(Qt.AlignCenter)
+
+        busy_card_layout.addWidget(self.busy_title)
+        busy_card_layout.addWidget(self.busy_body)
+        busy_overlay_layout.addWidget(self.busy_card)
 
         self.tree_model = QFileSystemModel(self)
         self.tree_model.setRootPath(str(self.project_root))
@@ -352,19 +393,21 @@ class VibePaperDesktop(QMainWindow):
         self.setStatusBar(self.status_bar)
 
     def _bind_actions(self) -> None:
-        self.generate_button.clicked.connect(self.generate_context)
-        self.save_button.clicked.connect(self.save_current_file)
         self.compile_button.clicked.connect(self.compile_paper)
-        self.refresh_button.clicked.connect(self.refresh_preview)
         self.open_formal_button.clicked.connect(self.open_formal_pdf)
         self.files_button.clicked.connect(self.toggle_files_panel)
-        self.source_button.clicked.connect(self.toggle_source_panel)
-        self.log_button.clicked.connect(self.toggle_log_panel)
         self.lang_button.clicked.connect(self.toggle_language)
         self.file_tree.doubleClicked.connect(self.open_selected_file)
-        self.file_dock.visibilityChanged.connect(self._sync_toggle_buttons)
-        self.editor_dock.visibilityChanged.connect(self._sync_toggle_buttons)
-        self.log_dock.visibilityChanged.connect(self._sync_toggle_buttons)
+        self._bind_shortcuts()
+
+    def _bind_shortcuts(self) -> None:
+        QShortcut(QKeySequence("Ctrl+Return"), self, activated=self.compile_paper)
+        QShortcut(QKeySequence("Ctrl+Shift+O"), self, activated=self.open_formal_pdf)
+        QShortcut(QKeySequence("Ctrl+S"), self, activated=self.save_current_file)
+        QShortcut(QKeySequence("Ctrl+1"), self, activated=self.toggle_files_panel)
+        QShortcut(QKeySequence("Ctrl+2"), self, activated=self.toggle_source_panel)
+        QShortcut(QKeySequence("Ctrl+3"), self, activated=self.toggle_log_panel)
+        QShortcut(QKeySequence("Ctrl+Shift+G"), self, activated=self.generate_context)
 
     def _load_project_tree(self) -> None:
         self.tree_model.setRootPath(str(self.project_root))
@@ -374,11 +417,10 @@ class VibePaperDesktop(QMainWindow):
             self.file_tree.expand(paper_index)
 
     def _load_default_file(self) -> None:
-        candidates = [
+        for candidate in (
             self.paper_dir / "main.tex",
             self.paper_dir / "context" / "project_snapshot.md",
-        ]
-        for candidate in candidates:
+        ):
             if candidate.exists():
                 self.load_file(candidate, show_panel=False)
                 return
@@ -391,15 +433,15 @@ class VibePaperDesktop(QMainWindow):
         self.brand_label.setText("Vibe Paper")
         self._reset_header_status()
 
-        self.generate_button.setText(text["generate"])
-        self.save_button.setText(text["save"])
         self.compile_button.setText(text["compile"])
-        self.refresh_button.setText(text["refresh"])
         self.open_formal_button.setText(text["openFormal"])
         self.files_button.setText(text["files"])
-        self.source_button.setText(text["source"])
-        self.log_button.setText(text["log"])
         self.lang_button.setText(text["lang"])
+
+        self.compile_button.setToolTip(f"{text['compile']} (Ctrl+Enter)")
+        self.open_formal_button.setToolTip(f"{text['openFormal']} (Ctrl+Shift+O)")
+        self.files_button.setToolTip(f"{text['files']} (Ctrl+1)")
+        self.lang_button.setToolTip(f"{text['source']}: Ctrl+2 | {text['log']}: Ctrl+3")
 
         self.file_dock.setWindowTitle(text["files"])
         self.editor_dock.setWindowTitle(text["source"])
@@ -413,15 +455,18 @@ class VibePaperDesktop(QMainWindow):
         if not self.page_frames:
             self.preview_placeholder.setText(text["noPreview"])
 
-        self._sync_toggle_buttons()
+        if self.busy_chip.isVisible():
+            self.busy_chip.setText(text["statusCompiling"])
+            self.busy_title.setText(text["statusCompiling"])
+            if self.language == "zh":
+                self.busy_body.setText("正在编译论文并更新 PDF 预览")
+            else:
+                self.busy_body.setText("Compiling the paper and updating the PDF preview")
 
-    def _make_button(self, accent: bool = False, toggle: bool = False) -> QPushButton:
+    def _make_button(self, accent: bool = False) -> QPushButton:
         button = QPushButton(self.overlay_bar)
         if accent:
             button.setProperty("accent", True)
-        if toggle:
-            button.setCheckable(True)
-            button.setProperty("toggleButton", True)
         button.setCursor(Qt.PointingHandCursor)
         button.style().unpolish(button)
         button.style().polish(button)
@@ -430,8 +475,8 @@ class VibePaperDesktop(QMainWindow):
     def _apply_shadow(
         self,
         widget: QWidget,
-        blur: int = 24,
-        alpha: int = 34,
+        blur: int = 22,
+        alpha: int = 28,
         offset_x: int = 0,
         offset_y: int = 8,
     ) -> None:
@@ -441,28 +486,14 @@ class VibePaperDesktop(QMainWindow):
         shadow.setColor(QColor(19, 33, 54, alpha))
         widget.setGraphicsEffect(shadow)
 
-    def _sync_toggle_buttons(self) -> None:
-        self.files_button.blockSignals(True)
-        self.source_button.blockSignals(True)
-        self.log_button.blockSignals(True)
-        self.files_button.setChecked(self.file_dock.isVisible())
-        self.source_button.setChecked(self.editor_dock.isVisible())
-        self.log_button.setChecked(self.log_dock.isVisible())
-        self.files_button.blockSignals(False)
-        self.source_button.blockSignals(False)
-        self.log_button.blockSignals(False)
-
     def toggle_files_panel(self) -> None:
         self.file_dock.setVisible(not self.file_dock.isVisible())
-        self._sync_toggle_buttons()
 
     def toggle_source_panel(self) -> None:
         self.editor_dock.setVisible(not self.editor_dock.isVisible())
-        self._sync_toggle_buttons()
 
     def toggle_log_panel(self) -> None:
         self.log_dock.setVisible(not self.log_dock.isVisible())
-        self._sync_toggle_buttons()
 
     def toggle_language(self) -> None:
         self.language = "zh" if self.language == "en" else "en"
@@ -470,9 +501,8 @@ class VibePaperDesktop(QMainWindow):
 
     def open_selected_file(self, index) -> None:
         path = Path(self.tree_model.filePath(index))
-        if path.is_dir():
-            return
-        self.load_file(path, show_panel=True)
+        if not path.is_dir():
+            self.load_file(path, show_panel=True)
 
     def load_file(self, path: Path, show_panel: bool = True) -> None:
         if not is_text_editable(path):
@@ -496,7 +526,6 @@ class VibePaperDesktop(QMainWindow):
         if show_panel:
             self.editor_dock.show()
             self.raiseDockWidget(self.editor_dock)
-            self._sync_toggle_buttons()
 
     def raiseDockWidget(self, dock: QDockWidget) -> None:  # noqa: N802 - Qt-ish helper
         dock.raise_()
@@ -530,22 +559,27 @@ class VibePaperDesktop(QMainWindow):
         if self.current_file and self.editor.document().isModified():
             if not self.save_current_file():
                 return
-        self._show_status(TEXTS[self.language]["compile"])
-        result = compile_project_paper(self.project_root)
+
+        self._set_busy(True, TEXTS[self.language]["statusCompiling"])
         try:
-            write_project_snapshot(self.project_root)
-        except Exception:
-            pass
-        self.log_view.setPlainText(result.log_text)
-        if result.success:
-            self.refresh_preview(show_message=False)
-            self._show_status(TEXTS[self.language]["compileDone"])
-        else:
-            self.log_dock.show()
-            self._sync_toggle_buttons()
-            self._show_error(TEXTS[self.language]["compileError"], result.message)
-            self.status_bar.showMessage(TEXTS[self.language]["compileFailed"], 5000)
-        self._load_project_tree()
+            self._show_status(TEXTS[self.language]["statusCompiling"])
+            result: CompileResult = compile_project_paper(self.project_root)
+            try:
+                write_project_snapshot(self.project_root)
+            except Exception:
+                pass
+
+            self.log_view.setPlainText(result.log_text)
+            if result.success:
+                self.refresh_preview(show_message=False)
+                self._show_status(TEXTS[self.language]["compileDone"])
+            else:
+                self.log_dock.show()
+                self._show_error(TEXTS[self.language]["compileError"], result.message)
+                self.status_bar.showMessage(TEXTS[self.language]["compileFailed"], 5000)
+            self._load_project_tree()
+        finally:
+            self._set_busy(False)
 
     def refresh_preview(self, show_message: bool = True) -> None:
         self.preview_placeholder.show()
@@ -553,7 +587,7 @@ class VibePaperDesktop(QMainWindow):
         if not self.preview_pdf.exists():
             self._clear_preview_pages()
             if show_message:
-                self._show_status(TEXTS[self.language]["noPreview"])
+                self._show_status(TEXTS[self.language]["statusNoPreview"])
             return
 
         try:
@@ -575,9 +609,9 @@ class VibePaperDesktop(QMainWindow):
 
             page_frame = QFrame(self.preview_container)
             page_frame.setObjectName("PageFrame")
-            self._apply_shadow(page_frame, blur=24, alpha=28, offset_y=8)
+            self._apply_shadow(page_frame, blur=22, alpha=24, offset_y=8)
             page_layout = QVBoxLayout(page_frame)
-            page_layout.setContentsMargins(18, 16, 18, 18)
+            page_layout.setContentsMargins(18, 14, 18, 18)
             page_layout.setSpacing(8)
 
             page_hint = QLabel(f"Page {page_number}", page_frame)
@@ -618,7 +652,7 @@ class VibePaperDesktop(QMainWindow):
     def _rescale_preview_pages(self) -> None:
         if not self.page_pixmaps or not self.page_frames:
             return
-        viewport_width = max(440, self.preview_scroll.viewport().width() - 70)
+        viewport_width = max(420, self.preview_scroll.viewport().width() - 72)
         for pixmap, page_frame in zip(self.page_pixmaps, self.page_frames):
             page_label = page_frame._page_label  # type: ignore[attr-defined]
             scaled = pixmap.scaledToWidth(viewport_width, Qt.SmoothTransformation)
@@ -627,21 +661,27 @@ class VibePaperDesktop(QMainWindow):
 
     def _position_overlay_bar(self) -> None:
         margin = 12
-        max_width = max(620, self.centralWidget().width() - margin * 2)
+        max_width = max(420, self.centralWidget().width() - margin * 2)
         desired = min(max_width, self.overlay_bar.sizeHint().width())
         height = self.overlay_bar.sizeHint().height()
         x = max(margin, (self.centralWidget().width() - desired) // 2)
         self.overlay_bar.setGeometry(x, margin, desired, height)
         self.overlay_bar.raise_()
 
+    def _position_busy_overlay(self) -> None:
+        viewport = self.preview_scroll.viewport()
+        self.preview_busy_overlay.setGeometry(viewport.rect())
+        self.preview_busy_overlay.raise_()
+
     def resizeEvent(self, event) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
         self._position_overlay_bar()
+        self._position_busy_overlay()
         self._rescale_preview_pages()
 
     def _reset_header_status(self) -> None:
         text = TEXTS[self.language]
-        self.meta_label.setText(f"{self.project_root.name} · {text['hint']} · {text['statusReady']}")
+        self.meta_label.setText(f"{self.project_root.name} · {text['statusPreview']} · {text['statusReady']}")
 
     def _show_status(self, message: str) -> None:
         self.meta_label.setText(f"{self.project_root.name} · {message}")
@@ -652,6 +692,27 @@ class VibePaperDesktop(QMainWindow):
         self.meta_label.setText(f"{self.project_root.name} · {title}")
         self.status_timer.start(4000)
         QMessageBox.critical(self, title, message)
+
+    def _set_busy(self, busy: bool, message: str | None = None) -> None:
+        self.compile_button.setEnabled(not busy)
+        self.open_formal_button.setEnabled(not busy)
+        self.files_button.setEnabled(not busy)
+        if busy:
+            status_text = message or TEXTS[self.language]["statusCompiling"]
+            self.busy_chip.setText(status_text)
+            self.busy_chip.show()
+            self.busy_title.setText(status_text)
+            if self.language == "zh":
+                self.busy_body.setText("正在编译论文并更新 PDF 预览")
+            else:
+                self.busy_body.setText("Compiling the paper and updating the PDF preview")
+            self._position_busy_overlay()
+            self.preview_busy_overlay.show()
+            self.preview_busy_overlay.raise_()
+            QApplication.processEvents()
+        else:
+            self.busy_chip.hide()
+            self.preview_busy_overlay.hide()
 
 
 def run_smoke_test(project_root: Path) -> int:

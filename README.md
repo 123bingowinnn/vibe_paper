@@ -2,7 +2,7 @@
 
 A local-first, skill-first paper workspace for writing LaTeX papers directly inside real experiment projects.
 
-Vibe Paper is an installable Codex skill plus a local runtime. The experiment repository remains the root workspace, agents such as Codex, Cursor, and Claude Code read the real code, configs, logs, and result files, the paper lives in `paper/` inside the same project, compilation happens locally with LaTeX, and a native popup preview keeps the writing loop close to Overleaf while remaining fully local.
+Vibe Paper is an installable Codex skill plus a local runtime. The experiment repository remains the root workspace, agents such as Codex, Cursor, and Claude Code read the real code, configs, logs, and result files, the paper lives in `paper/` inside the same project, compilation happens locally with LaTeX, and a native popup preview keeps the writing loop focused on the PDF itself.
 
 ## Core Idea
 
@@ -16,7 +16,7 @@ That makes the workflow much closer to a local, single-user version of Overleaf,
 - a project-aware `paper/` initializer
 - a reusable IEEE-style paper template
 - a stable local LaTeX build backend
-- a native popup preview runtime with optional source and file panels
+- a native popup preview runtime with a minimal HUD
 - automatic generation of `paper/context/project_snapshot.md`
 - adapter notes for Cursor and Claude Code
 - example projects for smoke testing the workflow
@@ -90,11 +90,8 @@ powershell -ExecutionPolicy Bypass -File .\scripts\open-preview.ps1 `
 The popup preview opens a native window and provides:
 
 - a PDF preview-first experience
-- a collapsible project file tree
-- an optional built-in text editor
-- one-click context generation
-- one-click compilation
-- a collapsible build log panel
+- a minimal floating HUD for update, open-PDF, and file access
+- hidden advanced panels for files, source, and logs via shortcuts
 - preview rendering through `main_preview.pdf`
 
 ### 4. Point your agent at the same project root
@@ -128,7 +125,7 @@ Local preview shells can occasionally open a half-written PDF during compilation
 - `main.pdf` as the formal output
 - `main_preview.pdf` as the safer preview copy for the desktop app
 
-The desktop app always prefers the preview copy.
+The desktop app always prefers the preview copy. The primary interface is intentionally minimal, and advanced panels stay behind shortcuts instead of taking over the screen.
 
 ## Adapters
 

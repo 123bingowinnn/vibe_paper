@@ -54,22 +54,21 @@ Then a native preview window opens on your desktop.
 
 ## What you will see
 
-The popup preview has four main areas:
-
-- the center previews `paper/build/main_preview.pdf`
-- the left file tree can be shown or hidden
-- the source editor can be shown or hidden
-- the bottom log panel can be shown or hidden
+The popup preview is designed around one main thing: the center previews `paper/build/main_preview.pdf`. The rest of the interface stays out of the way unless you need it.
 
 ## What the top buttons do
 
-- `Context`: rescans the experiment project and rewrites `paper/context/project_snapshot.md`
-- `Save`: saves the file that is currently open in the editor
-- `Compile`: runs the local LaTeX build backend
-- `Refresh`: reloads the preview PDF
+- `Update`: runs the local LaTeX build backend and then refreshes the preview
 - `PDF`: opens `paper/build/main.pdf`
-- `Files`, `Source`, and `Log`: toggle the optional side panels
+- `Files`: opens or hides the optional file browser
 - the language toggle switches the UI between English and Chinese
+
+The source editor and build log still exist, but they stay behind shortcuts instead of taking over the main HUD:
+
+- `Ctrl+2`: show or hide the source editor
+- `Ctrl+3`: show or hide the build log
+- `Ctrl+S`: save the current source file
+- `Ctrl+Shift+G`: regenerate `paper/context/project_snapshot.md`
 
 ## How to use it with an agent
 

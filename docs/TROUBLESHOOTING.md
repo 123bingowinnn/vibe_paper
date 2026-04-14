@@ -36,4 +36,4 @@ Make sure the app is pointing at the experiment project root that contains `pape
 
 ## The agent ignores project results
 
-Regenerate `paper/context/project_snapshot.md` from the desktop app. The snapshot is the shared evidence index that the agent is expected to read first.
+Regenerate `paper/context/project_snapshot.md` with `Ctrl+Shift+G` inside the popup preview, or rerun `scripts\init-workspace.ps1`. The snapshot is the shared evidence index that the agent is expected to read first.
