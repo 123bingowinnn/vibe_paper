@@ -1,4 +1,4 @@
 interface:
   display_name: "Vibe Paper"
-  short_description: "Skill-first local LaTeX paper workspace"
-  default_prompt: "Use $vibe-paper to turn this experiment repository into a local paper workspace and open the native preview popup."
+  short_description: "Local skill for paper workspaces, popup preview, and LaTeX compile loops"
+  default_prompt: "Use $vibe-paper to read this experiment repository, initialize or update the local paper workspace, and open the native popup preview."

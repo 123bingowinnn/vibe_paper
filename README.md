@@ -40,6 +40,25 @@ vibe-paper/
 
 ## Quick Start
 
+## Using Vibe Paper as a Skill
+
+The repository itself is the skill.
+
+When Codex is attached to a real experiment repository, you can invoke it with prompts such as:
+
+- `Use $vibe-paper to turn this repository into a local paper workspace.`
+- `Use $vibe-paper to read the project snapshot and revise paper/main.tex.`
+- `Use $vibe-paper to open the popup preview and update the PDF.`
+
+The expected flow is:
+
+1. initialize `paper/` when needed
+2. read `paper/context/project_snapshot.md`
+3. edit `paper/main.tex`
+4. use the local popup preview loop
+
+For exact invocation patterns, see `references/skill-invocation.md`.
+
 ### 1. Check the environment
 
 ```powershell

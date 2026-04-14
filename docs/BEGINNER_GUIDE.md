@@ -76,6 +76,12 @@ Open the same experiment project root in Codex, Cursor, or Claude Code. Do not p
 
 For Codex, this repository itself is the `vibe-paper` skill.
 
+You can say things like:
+
+- `Use $vibe-paper to initialize the paper workspace for this repository.`
+- `Use $vibe-paper to open the popup preview for this project.`
+- `Use $vibe-paper to update the paper from the current project snapshot.`
+
 Tell the agent to read:
 
 ```text

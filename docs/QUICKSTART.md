@@ -7,6 +7,11 @@
 3. Launch the native preview popup with `scripts\open-preview.ps1`.
 4. Open the project root in your agent and let it work against the same files.
 
+For Codex, you can explicitly invoke the repository skill with prompts such as:
+
+- `Use $vibe-paper to initialize the paper workspace in this repository.`
+- `Use $vibe-paper to open the popup preview for this project.`
+
 ## Initialize a project-aware paper workspace
 
 ```powershell
