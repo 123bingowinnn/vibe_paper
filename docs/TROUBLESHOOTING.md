@@ -15,7 +15,7 @@ Install MiKTeX or TeX Live and confirm that `pdflatex` and `bibtex` work in a fr
 Run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\check-latex-env.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\check-env.ps1
 ```
 
 ## `pdftoppm` is missing

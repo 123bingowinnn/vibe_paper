@@ -15,5 +15,4 @@ Treat the whole project root as readable context. Treat `paper/` as the writable
 
 Preserve numeric claims from real code, logs, configs, and exported result files. Do not invent missing metrics, baselines, or dataset counts.
 
-When compilation is needed, use the local Vibe Paper build flow instead of editor-specific LaTeX commands.
-
+When compilation is needed, use the local Vibe Paper build flow instead of editor-specific LaTeX commands. If the user wants preview, prefer the native popup script entrypoint over editor-integrated preview.

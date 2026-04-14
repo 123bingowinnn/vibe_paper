@@ -2,15 +2,15 @@
 
 ## Recommended first run
 
-1. Run `tools\check-latex-env.ps1`.
+1. Run `scripts\check-env.ps1`.
 2. Initialize `paper/` inside `examples\toy-experiment`.
-3. Start the desktop app with `tools\start-vibe-paper.ps1`.
+3. Launch the native preview popup with `scripts\open-preview.ps1`.
 4. Open the project root in your agent and let it work against the same files.
 
 ## Initialize a project-aware paper workspace
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\init-vibe-paper.ps1 `
+powershell -ExecutionPolicy Bypass -File .\scripts\init-workspace.ps1 `
   -ProjectRoot .\examples\toy-experiment `
   -Title "A Toy Detector Paper" `
   -Author "Sample Author" `
@@ -27,14 +27,14 @@ This creates:
 - `paper/build/`
 - `paper/context/project_snapshot.md`
 
-## Start the local desktop app
+## Launch the native preview popup
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper.ps1 `
+powershell -ExecutionPolicy Bypass -File .\scripts\open-preview.ps1 `
   -ProjectRoot .\examples\toy-experiment
 ```
 
-The native desktop window gives you:
+The native popup window gives you:
 
 - a preview-first PDF window
 - a collapsible file tree rooted at the whole experiment project
@@ -58,3 +58,5 @@ Then it should edit:
 ```text
 paper/main.tex
 ```
+
+For Codex, the repository itself is the skill. For other agents, follow the notes in `adapters/`.

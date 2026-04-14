@@ -1,29 +1,34 @@
 # Vibe Paper
 
-A local-first, agent-native paper workspace for writing LaTeX papers directly inside real experiment projects.
+A local-first, skill-first paper workspace for writing LaTeX papers directly inside real experiment projects.
 
-Vibe Paper is built for a workflow where the experiment repository remains the root workspace, agents such as Codex, Cursor, and Claude Code read the real code, configs, logs, and result files, the paper lives in `paper/` inside the same project, compilation happens locally with LaTeX, and a native desktop app provides preview-first paper writing without depending on VS Code preview.
+Vibe Paper is an installable Codex skill plus a local runtime. The experiment repository remains the root workspace, agents such as Codex, Cursor, and Claude Code read the real code, configs, logs, and result files, the paper lives in `paper/` inside the same project, compilation happens locally with LaTeX, and a native popup preview keeps the writing loop close to Overleaf while remaining fully local.
 
 ## Core Idea
 
 Instead of asking an agent to draft a paper from detached chat history, Vibe Paper attaches the agent to the whole experiment folder. The agent reads real project evidence, writes real LaTeX files, and works against a local compile loop.
 
-That makes the workflow much closer to a local, single-user version of Overleaf, while preserving full control of the files and the build chain.
+That makes the workflow much closer to a local, single-user version of Overleaf, while preserving full control of the files, prompts, and build chain.
 
 ## What This Repository Includes
 
+- a root-level `SKILL.md` and `agents/openai.yaml`
 - a project-aware `paper/` initializer
 - a reusable IEEE-style paper template
 - a stable local LaTeX build backend
-- a native desktop preview app with optional source and file panels
+- a native popup preview runtime with optional source and file panels
 - automatic generation of `paper/context/project_snapshot.md`
-- adapters for Codex, Cursor, and Claude Code
+- adapter notes for Cursor and Claude Code
 - example projects for smoke testing the workflow
 
 ## Repository Layout
 
 ```text
 vibe-paper/
+|-- SKILL.md
+|-- agents/
+|-- references/
+|-- scripts/
 |-- adapters/
 |-- app/
 |-- core/
@@ -38,7 +43,7 @@ vibe-paper/
 ### 1. Check the environment
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\check-latex-env.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\check-env.ps1
 ```
 
 This checks for:
@@ -54,7 +59,7 @@ This checks for:
 Use the included example experiment:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\init-vibe-paper.ps1 `
+powershell -ExecutionPolicy Bypass -File .\scripts\init-workspace.ps1 `
   -ProjectRoot .\examples\toy-experiment `
   -Title "A Toy Detector Paper" `
   -Author "Sample Author" `
@@ -75,14 +80,14 @@ and also generates:
 examples\toy-experiment\paper\context\project_snapshot.md
 ```
 
-### 3. Start the local desktop app
+### 3. Launch the native popup preview
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper.ps1 `
+powershell -ExecutionPolicy Bypass -File .\scripts\open-preview.ps1 `
   -ProjectRoot .\examples\toy-experiment
 ```
 
-The desktop UI opens a native window and provides:
+The popup preview opens a native window and provides:
 
 - a PDF preview-first experience
 - a collapsible project file tree
@@ -108,6 +113,8 @@ paper/context/project_snapshot.md
 
 first, and then draft or edit `paper/main.tex`.
 
+For Codex, this repository itself is the skill. For other agents, use the notes in `adapters/`.
+
 ## Why `project_snapshot.md` Exists
 
 Different agents can behave inconsistently if they each rediscover the project from scratch. Vibe Paper therefore generates a shared context file under `paper/context/` that summarizes project overview, top-level structure, key code files, key config files, dataset and experiment hints, exported metrics and artifact paths, and current paper workspace status.
@@ -125,13 +132,10 @@ The desktop app always prefers the preview copy.
 
 ## Adapters
 
-See:
+For Codex, the canonical instructions live in the root `SKILL.md`. For other agents, see:
 
-- `adapters/codex/`
 - `adapters/cursor/`
 - `adapters/claude-code/`
-
-These adapters do not replace the core runtime. They only tell each agent how to behave inside the same project protocol.
 
 ## Example Projects
 

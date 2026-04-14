@@ -6,12 +6,12 @@ This guide is for users who already have an experiment project on disk and want 
 
 ## What Vibe Paper does
 
-Vibe Paper does not replace LaTeX. It wraps a local LaTeX workflow so that:
+Vibe Paper does not replace LaTeX. It packages a local LaTeX workflow as a skill and runtime so that:
 
 - your experiment project remains the real source of evidence
 - your paper lives in `paper/` inside that same project
 - an agent can read the code, configs, logs, and results before it writes
-- a local desktop app gives you PDF preview, compile logs, and optional editing in one place
+- a native popup preview gives you PDF preview, compile logs, and optional editing in one place
 
 ## The shortest path to a working demo
 
@@ -20,7 +20,7 @@ Vibe Paper does not replace LaTeX. It wraps a local LaTeX workflow so that:
 Run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\check-latex-env.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\check-env.ps1
 ```
 
 If `pdflatex`, `bibtex`, `pdftoppm`, or `PyQt5` is missing, fix that first.
@@ -30,7 +30,7 @@ If `pdflatex`, `bibtex`, `pdftoppm`, or `PyQt5` is missing, fix that first.
 Run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\init-vibe-paper.ps1 `
+powershell -ExecutionPolicy Bypass -File .\scripts\init-workspace.ps1 `
   -ProjectRoot .\examples\toy-experiment `
   -Title "A Toy Detector Paper" `
   -Author "Sample Author" `
@@ -41,12 +41,12 @@ powershell -ExecutionPolicy Bypass -File .\tools\init-vibe-paper.ps1 `
 
 This creates `paper/` inside the example experiment and generates `paper/context/project_snapshot.md`.
 
-### 3. Start the desktop app
+### 3. Launch the popup preview
 
 Run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper.ps1 `
+powershell -ExecutionPolicy Bypass -File .\scripts\open-preview.ps1 `
   -ProjectRoot .\examples\toy-experiment
 ```
 
@@ -54,7 +54,7 @@ Then a native preview window opens on your desktop.
 
 ## What you will see
 
-The desktop app has four main areas:
+The popup preview has four main areas:
 
 - the center previews `paper/build/main_preview.pdf`
 - the left file tree can be shown or hidden
@@ -63,17 +63,19 @@ The desktop app has four main areas:
 
 ## What the top buttons do
 
-- `Generate Context`: rescans the experiment project and rewrites `paper/context/project_snapshot.md`
-- `Save File`: saves the file that is currently open in the editor
-- `Compile Paper`: runs the local LaTeX build backend
-- `Refresh Preview`: reloads the preview PDF
-- `Open Formal PDF`: opens `paper/build/main.pdf`
+- `Context`: rescans the experiment project and rewrites `paper/context/project_snapshot.md`
+- `Save`: saves the file that is currently open in the editor
+- `Compile`: runs the local LaTeX build backend
+- `Refresh`: reloads the preview PDF
+- `PDF`: opens `paper/build/main.pdf`
 - `Files`, `Source`, and `Log`: toggle the optional side panels
 - the language toggle switches the UI between English and Chinese
 
 ## How to use it with an agent
 
 Open the same experiment project root in Codex, Cursor, or Claude Code. Do not point the agent only at `paper/`.
+
+For Codex, this repository itself is the `vibe-paper` skill.
 
 Tell the agent to read:
 
@@ -94,7 +96,7 @@ The point of this workflow is that the agent can see the real project evidence b
 If your project is stored at `D:\MyProject`, run:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\init-vibe-paper.ps1 `
+powershell -ExecutionPolicy Bypass -File .\scripts\init-workspace.ps1 `
   -ProjectRoot D:\MyProject `
   -Title "Your Paper Title" `
   -Author "Your Name" `
@@ -105,7 +107,7 @@ powershell -ExecutionPolicy Bypass -File .\tools\init-vibe-paper.ps1 `
 Then start the desktop app:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\tools\start-vibe-paper.ps1 `
+powershell -ExecutionPolicy Bypass -File .\scripts\open-preview.ps1 `
   -ProjectRoot D:\MyProject
 ```
 

@@ -14,4 +14,4 @@ This project uses Vibe Paper.
 - Prefer structured metrics from JSON, CSV, logs, and exported result summaries.
 - Do not invent missing experiments.
 - Use the local Vibe Paper build flow when compilation is required.
-
+- If the user wants preview, prefer the native popup script entrypoint instead of an editor-integrated preview.

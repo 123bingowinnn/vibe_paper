@@ -4,10 +4,11 @@ import argparse
 from pathlib import Path
 
 try:
-    from PyQt5.QtCore import QDir, Qt, QSize, QUrl
+    from PyQt5.QtCore import QDir, Qt, QSize, QTimer, QUrl
     from PyQt5.QtGui import QColor, QDesktopServices, QFont, QImage, QPixmap
     from PyQt5.QtWidgets import (
         QApplication,
+        QDockWidget,
         QFileSystemModel,
         QFrame,
         QGraphicsDropShadowEffect,
@@ -19,7 +20,6 @@ try:
         QPushButton,
         QScrollArea,
         QSizePolicy,
-        QSplitter,
         QStatusBar,
         QTreeView,
         QVBoxLayout,
@@ -39,29 +39,20 @@ from core.project_context import write_project_snapshot
 TEXTS = {
     "en": {
         "windowTitle": "Vibe Paper",
-        "title": "Vibe Paper",
-        "subtitle": "Local-first paper workspace",
-        "projectPrefix": "Project",
         "files": "Files",
         "source": "Source",
         "log": "Log",
-        "generate": "Generate Context",
-        "save": "Save File",
-        "compile": "Compile Paper",
-        "refresh": "Refresh Preview",
-        "openFormal": "Open Formal PDF",
-        "previewTitle": "PDF Preview",
-        "previewSubtitle": "",
-        "sourceTitle": "LaTeX Source",
-        "sourceSubtitle": "",
-        "logTitle": "Build Log",
-        "logSubtitle": "",
+        "generate": "Context",
+        "save": "Save",
+        "compile": "Compile",
+        "refresh": "Refresh",
+        "openFormal": "Open PDF",
         "pathPrefix": "Current file",
         "noPreview": "No preview PDF is available yet. Compile the paper or refresh after LaTeX changes.",
         "contextDone": "Project snapshot regenerated.",
         "fileSaved": "File saved.",
         "compileDone": "Paper compiled successfully.",
-        "compileFailed": "Paper compilation failed. Open the build log and inspect the message.",
+        "compileFailed": "Paper compilation failed. Open the log panel for details.",
         "previewDone": "Preview refreshed.",
         "fileNotEditable": "This file type is not editable in the built-in editor.",
         "previewError": "Preview refresh failed",
@@ -70,27 +61,19 @@ TEXTS = {
         "contextError": "Context generation failed",
         "openPdfError": "Formal PDF is not available yet.",
         "lang": "中文",
-        "statusReady": "Ready.",
+        "statusReady": "Ready",
+        "hint": "Preview-first mode",
     },
     "zh": {
         "windowTitle": "Vibe Paper",
-        "title": "Vibe Paper",
-        "subtitle": "本地优先论文工作台",
-        "projectPrefix": "当前项目",
         "files": "目录",
         "source": "源码",
         "log": "日志",
-        "generate": "生成上下文",
-        "save": "保存文件",
-        "compile": "编译论文",
-        "refresh": "刷新预览",
-        "openFormal": "打开正式 PDF",
-        "previewTitle": "PDF 预览",
-        "previewSubtitle": "",
-        "sourceTitle": "LaTeX 源码",
-        "sourceSubtitle": "",
-        "logTitle": "编译日志",
-        "logSubtitle": "",
+        "generate": "上下文",
+        "save": "保存",
+        "compile": "编译",
+        "refresh": "刷新",
+        "openFormal": "PDF",
         "pathPrefix": "当前文件",
         "noPreview": "还没有可用的预览 PDF。先编译论文，或在 LaTeX 修改后手动刷新。",
         "contextDone": "项目快照已重新生成。",
@@ -105,7 +88,8 @@ TEXTS = {
         "contextError": "上下文生成失败",
         "openPdfError": "正式 PDF 还不存在。",
         "lang": "EN",
-        "statusReady": "已就绪。",
+        "statusReady": "已就绪",
+        "hint": "预览优先模式",
     },
 }
 
@@ -113,83 +97,81 @@ TEXTS = {
 APP_STYLESHEET = """
 QMainWindow {
     background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
-        stop:0 rgba(232, 238, 248, 255),
-        stop:0.55 rgba(239, 243, 250, 255),
-        stop:1 rgba(231, 238, 246, 255));
+        stop:0 rgba(229, 236, 248, 255),
+        stop:0.58 rgba(238, 243, 250, 255),
+        stop:1 rgba(228, 235, 245, 255));
 }
-QFrame#TopBar,
-QFrame#PanelCard,
-QFrame#PreviewPanel,
-QFrame#LogPanel,
-QFrame#PageCard {
-    background: rgba(255, 255, 255, 166);
-    border: 1px solid rgba(255, 255, 255, 150);
-    border-radius: 20px;
+QFrame#OverlayBar {
+    background: rgba(255, 255, 255, 146);
+    border: 1px solid rgba(255, 255, 255, 176);
+    border-radius: 17px;
 }
-QFrame#TopBar {
-    border-radius: 24px;
+QFrame#PageFrame {
+    background: rgba(255, 255, 255, 242);
+    border: 1px solid rgba(255, 255, 255, 214);
+    border-radius: 22px;
 }
-QLabel#AppTitle {
-    color: #1a2433;
-    font-size: 30px;
+QLabel#BrandLabel {
+    color: #172233;
+    font-size: 13px;
     font-weight: 700;
 }
-QLabel#AppSubtitle,
-QLabel#PanelSubtitle,
-QLabel#ProjectChip,
+QLabel#MetaLabel {
+    color: rgba(44, 58, 78, 172);
+    font-size: 11px;
+}
+QLabel#PageHintLabel,
 QLabel#PathLabel {
-    color: rgba(50, 66, 87, 185);
-    font-size: 12px;
-}
-QLabel#ProjectChip {
-    padding: 7px 12px;
-    border-radius: 14px;
-    background: rgba(240, 245, 255, 155);
-    border: 1px solid rgba(255, 255, 255, 170);
-}
-QLabel#PanelTitle {
-    color: #1d2736;
-    font-size: 14px;
-    font-weight: 600;
+    color: rgba(55, 68, 88, 158);
+    font-size: 11px;
 }
 QPushButton {
-    min-height: 38px;
-    padding: 0 16px;
-    border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 175);
-    background: rgba(255, 255, 255, 148);
-    color: #243145;
-    font-size: 13px;
+    min-height: 28px;
+    padding: 0 10px;
+    border-radius: 13px;
+    border: 1px solid rgba(255, 255, 255, 176);
+    background: rgba(255, 255, 255, 118);
+    color: #213048;
+    font-size: 11px;
     font-weight: 600;
 }
 QPushButton:hover {
-    background: rgba(255, 255, 255, 182);
-    border-color: rgba(255, 255, 255, 205);
+    background: rgba(255, 255, 255, 158);
+    border-color: rgba(255, 255, 255, 214);
 }
 QPushButton:pressed {
-    background: rgba(226, 235, 250, 188);
+    background: rgba(230, 237, 248, 176);
 }
 QPushButton[accent="true"] {
-    background: rgba(63, 110, 232, 225);
-    color: #ffffff;
-    border: 1px solid rgba(63, 110, 232, 240);
+    background: rgba(61, 107, 224, 214);
+    border: 1px solid rgba(61, 107, 224, 228);
+    color: white;
 }
 QPushButton[accent="true"]:hover {
-    background: rgba(49, 94, 210, 236);
-    border-color: rgba(49, 94, 210, 246);
-}
-QPushButton[toggleButton="true"] {
-    background: rgba(255, 255, 255, 128);
+    background: rgba(47, 90, 202, 228);
 }
 QPushButton[toggleButton="true"]:checked {
-    background: rgba(232, 240, 255, 182);
-    border-color: rgba(170, 194, 244, 220);
+    background: rgba(235, 242, 255, 172);
+    border-color: rgba(170, 194, 244, 206);
     color: #244aa5;
+}
+QDockWidget {
+    color: #1f2b3a;
+}
+QDockWidget::title {
+    text-align: left;
+    padding-left: 12px;
+    height: 28px;
+    background: rgba(255, 255, 255, 176);
+    border: 1px solid rgba(255, 255, 255, 185);
+    border-radius: 12px;
+    color: #243145;
+    font-weight: 600;
 }
 QTreeView,
 QPlainTextEdit {
-    background: rgba(255, 255, 255, 106);
-    border: 1px solid rgba(255, 255, 255, 150);
+    background: rgba(255, 255, 255, 148);
+    border: 1px solid rgba(255, 255, 255, 182);
     border-radius: 14px;
     color: #1f2b3a;
     selection-background-color: #dfeaff;
@@ -203,7 +185,7 @@ QTreeView::item {
     border-radius: 8px;
 }
 QTreeView::item:hover {
-    background: #f0f5fd;
+    background: rgba(240, 245, 253, 225);
 }
 QPlainTextEdit {
     padding: 10px;
@@ -216,10 +198,7 @@ QScrollArea {
 }
 QStatusBar {
     background: transparent;
-    color: #5a6a81;
-}
-QSplitter::handle {
-    background: transparent;
+    color: rgba(57, 71, 92, 180);
 }
 """
 
@@ -236,57 +215,53 @@ class VibePaperDesktop(QMainWindow):
         self.current_file: Path | None = None
         self.current_file_rel = ""
         self.page_pixmaps: list[QPixmap] = []
-        self.page_cards: list[QFrame] = []
+        self.page_frames: list[QFrame] = []
+        self.status_timer = QTimer(self)
+        self.status_timer.setSingleShot(True)
+        self.status_timer.timeout.connect(self._reset_header_status)
 
         self._build_ui()
         self._bind_actions()
         self._load_project_tree()
         self._load_default_file()
         self._apply_language()
-        self._apply_panel_visibility()
         self.refresh_preview(show_message=False)
 
     def _build_ui(self) -> None:
-        self.setMinimumSize(QSize(1180, 780))
-        self.resize(1460, 940)
+        self.setMinimumSize(QSize(1180, 760))
+        self.resize(1450, 930)
         self.setStyleSheet(APP_STYLESHEET)
 
         central = QWidget(self)
         root_layout = QVBoxLayout(central)
-        root_layout.setContentsMargins(18, 18, 18, 10)
-        root_layout.setSpacing(14)
+        root_layout.setContentsMargins(8, 8, 8, 6)
+        root_layout.setSpacing(0)
 
-        top_bar = QFrame(central)
-        top_bar.setObjectName("TopBar")
-        self._apply_shadow(top_bar, blur=28, alpha=60)
-        top_layout = QHBoxLayout(top_bar)
-        top_layout.setContentsMargins(20, 16, 20, 16)
-        top_layout.setSpacing(14)
+        self.overlay_bar = QFrame(central)
+        self.overlay_bar.setObjectName("OverlayBar")
+        self._apply_shadow(self.overlay_bar, blur=24, alpha=28, offset_y=4)
+        overlay_layout = QHBoxLayout(self.overlay_bar)
+        overlay_layout.setContentsMargins(14, 6, 14, 6)
+        overlay_layout.setSpacing(8)
 
-        title_column = QVBoxLayout()
-        title_column.setSpacing(4)
-        self.title_label = QLabel(top_bar)
-        self.title_label.setObjectName("AppTitle")
-        self.subtitle_label = QLabel(top_bar)
-        self.subtitle_label.setObjectName("AppSubtitle")
-        self.project_chip = QLabel(top_bar)
-        self.project_chip.setObjectName("ProjectChip")
-        title_column.addWidget(self.title_label)
-        title_column.addWidget(self.subtitle_label)
-        title_column.addWidget(self.project_chip)
-        top_layout.addLayout(title_column, stretch=1)
+        self.brand_label = QLabel(self.overlay_bar)
+        self.brand_label.setObjectName("BrandLabel")
+        self.meta_label = QLabel(self.overlay_bar)
+        self.meta_label.setObjectName("MetaLabel")
+        overlay_layout.addWidget(self.brand_label)
+        overlay_layout.addWidget(self.meta_label)
+        overlay_layout.addStretch(1)
 
-        button_row = QHBoxLayout()
-        button_row.setSpacing(10)
-        self.generate_button = self._make_button()
-        self.save_button = self._make_button()
+        self.generate_button = self._make_button(accent=False)
+        self.save_button = self._make_button(accent=False)
         self.compile_button = self._make_button(accent=True)
-        self.refresh_button = self._make_button()
-        self.open_formal_button = self._make_button()
+        self.refresh_button = self._make_button(accent=False)
+        self.open_formal_button = self._make_button(accent=False)
         self.files_button = self._make_button(toggle=True)
         self.source_button = self._make_button(toggle=True)
         self.log_button = self._make_button(toggle=True)
-        self.lang_button = self._make_button()
+        self.lang_button = self._make_button(accent=False)
+
         for button in (
             self.generate_button,
             self.save_button,
@@ -298,14 +273,33 @@ class VibePaperDesktop(QMainWindow):
             self.log_button,
             self.lang_button,
         ):
-            button_row.addWidget(button)
-        top_layout.addLayout(button_row)
+            overlay_layout.addWidget(button)
 
-        self.body_splitter = QSplitter(Qt.Vertical, central)
-        self.body_splitter.setChildrenCollapsible(False)
+        self.preview_scroll = QScrollArea(self)
+        self.preview_scroll.setWidgetResizable(True)
+        self.preview_scroll.setAlignment(Qt.AlignHCenter | Qt.AlignTop)
+        self.preview_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
 
-        self.main_splitter = QSplitter(Qt.Horizontal, self.body_splitter)
-        self.main_splitter.setChildrenCollapsible(False)
+        self.preview_container = QWidget(self.preview_scroll)
+        self.preview_layout = QVBoxLayout(self.preview_container)
+        self.preview_layout.setContentsMargins(6, 60, 6, 20)
+        self.preview_layout.setSpacing(20)
+        self.preview_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+
+        self.preview_placeholder = QLabel(self.preview_container)
+        self.preview_placeholder.setAlignment(Qt.AlignCenter)
+        self.preview_placeholder.setWordWrap(True)
+        self.preview_placeholder.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+        placeholder_font = QFont()
+        placeholder_font.setPointSize(12)
+        self.preview_placeholder.setFont(placeholder_font)
+        self.preview_layout.addWidget(self.preview_placeholder)
+
+        self.preview_scroll.setWidget(self.preview_container)
+
+        root_layout.addWidget(self.preview_scroll, 1)
+        self.setCentralWidget(central)
+        self.overlay_bar.raise_()
 
         self.tree_model = QFileSystemModel(self)
         self.tree_model.setRootPath(str(self.project_root))
@@ -315,135 +309,47 @@ class VibePaperDesktop(QMainWindow):
         self.file_tree.setRootIndex(self.tree_model.index(str(self.project_root)))
         self.file_tree.setHeaderHidden(False)
         self.file_tree.setAnimated(True)
-        self.file_tree.setSortingEnabled(False)
         for column in range(1, 4):
             self.file_tree.hideColumn(column)
-        self.file_tree.setMinimumWidth(250)
-        self.files_panel = self._wrap_panel(self.file_tree)
-        self._apply_shadow(self.files_panel, blur=24, alpha=40)
+        self.file_tree.setMinimumWidth(260)
 
-        source_body = QWidget(self)
-        source_layout = QVBoxLayout(source_body)
-        source_layout.setContentsMargins(0, 0, 0, 0)
-        source_layout.setSpacing(8)
-        self.path_label = QLabel(source_body)
+        self.file_dock = QDockWidget(self)
+        self.file_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.file_dock.setWidget(self.file_tree)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.file_dock)
+
+        self.path_label = QLabel(self)
         self.path_label.setObjectName("PathLabel")
-        self.editor = QPlainTextEdit(source_body)
-        source_layout.addWidget(self.path_label)
-        source_layout.addWidget(self.editor, stretch=1)
-        self.source_panel = self._wrap_panel(source_body)
-        self._apply_shadow(self.source_panel, blur=24, alpha=40)
+        self.path_label.setWordWrap(True)
+        self.editor = QPlainTextEdit(self)
+        editor_container = QWidget(self)
+        editor_layout = QVBoxLayout(editor_container)
+        editor_layout.setContentsMargins(8, 8, 8, 8)
+        editor_layout.setSpacing(8)
+        editor_layout.addWidget(self.path_label)
+        editor_layout.addWidget(self.editor)
 
-        preview_panel = QFrame(self)
-        preview_panel.setObjectName("PreviewPanel")
-        self._apply_shadow(preview_panel, blur=26, alpha=45)
-        preview_panel_layout = QVBoxLayout(preview_panel)
-        preview_panel_layout.setContentsMargins(16, 14, 16, 16)
-        preview_panel_layout.setSpacing(8)
-        self.preview_title = QLabel(preview_panel)
-        self.preview_title.setObjectName("PanelTitle")
-        self.preview_subtitle = QLabel(preview_panel)
-        self.preview_subtitle.setObjectName("PanelSubtitle")
-        preview_panel_layout.addWidget(self.preview_title)
-        preview_panel_layout.addWidget(self.preview_subtitle)
+        self.editor_dock = QDockWidget(self)
+        self.editor_dock.setAllowedAreas(Qt.LeftDockWidgetArea | Qt.RightDockWidgetArea)
+        self.editor_dock.setWidget(editor_container)
+        self.addDockWidget(Qt.LeftDockWidgetArea, self.editor_dock)
+        self.tabifyDockWidget(self.file_dock, self.editor_dock)
 
-        self.preview_scroll = QScrollArea(preview_panel)
-        self.preview_scroll.setWidgetResizable(True)
-        self.preview_scroll.setAlignment(Qt.AlignCenter)
-        self.preview_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-
-        self.preview_container = QWidget(self.preview_scroll)
-        self.preview_layout = QVBoxLayout(self.preview_container)
-        self.preview_layout.setContentsMargins(8, 10, 8, 10)
-        self.preview_layout.setSpacing(18)
-        self.preview_layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
-
-        self.preview_placeholder = QLabel(self.preview_container)
-        self.preview_placeholder.setAlignment(Qt.AlignCenter)
-        self.preview_placeholder.setWordWrap(True)
-        self.preview_placeholder.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        placeholder_font = QFont()
-        placeholder_font.setPointSize(13)
-        self.preview_placeholder.setFont(placeholder_font)
-        self.preview_layout.addWidget(self.preview_placeholder)
-
-        self.preview_scroll.setWidget(self.preview_container)
-        preview_panel_layout.addWidget(self.preview_scroll, stretch=1)
-        self.preview_panel = preview_panel
-
-        self.main_splitter.addWidget(self.files_panel)
-        self.main_splitter.addWidget(self.source_panel)
-        self.main_splitter.addWidget(self.preview_panel)
-        self.main_splitter.setStretchFactor(0, 0)
-        self.main_splitter.setStretchFactor(1, 0)
-        self.main_splitter.setStretchFactor(2, 1)
-
-        log_panel = QFrame(self)
-        log_panel.setObjectName("LogPanel")
-        self._apply_shadow(log_panel, blur=24, alpha=40)
-        log_layout = QVBoxLayout(log_panel)
-        log_layout.setContentsMargins(16, 16, 16, 16)
-        log_layout.setSpacing(8)
-        self.log_title = QLabel(log_panel)
-        self.log_title.setObjectName("PanelTitle")
-        self.log_subtitle = QLabel(log_panel)
-        self.log_subtitle.setObjectName("PanelSubtitle")
-        self.log_view = QPlainTextEdit(log_panel)
+        self.log_view = QPlainTextEdit(self)
         self.log_view.setReadOnly(True)
-        self.log_view.setMaximumBlockCount(3000)
-        log_layout.addWidget(self.log_title)
-        log_layout.addWidget(self.log_subtitle)
-        log_layout.addWidget(self.log_view, stretch=1)
-        self.log_panel = log_panel
+        self.log_view.setMaximumBlockCount(2000)
+        self.log_dock = QDockWidget(self)
+        self.log_dock.setAllowedAreas(Qt.BottomDockWidgetArea)
+        self.log_dock.setWidget(self.log_view)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.log_dock)
 
-        self.body_splitter.addWidget(self.main_splitter)
-        self.body_splitter.addWidget(self.log_panel)
-        self.body_splitter.setStretchFactor(0, 1)
-        self.body_splitter.setStretchFactor(1, 0)
+        self.file_dock.hide()
+        self.editor_dock.hide()
+        self.log_dock.hide()
 
-        root_layout.addWidget(top_bar)
-        root_layout.addWidget(self.body_splitter, stretch=1)
-
-        self.setCentralWidget(central)
         self.status_bar = QStatusBar(self)
+        self.status_bar.setSizeGripEnabled(False)
         self.setStatusBar(self.status_bar)
-
-        self.files_button.setChecked(False)
-        self.source_button.setChecked(False)
-        self.log_button.setChecked(False)
-
-    def _make_button(self, accent: bool = False, toggle: bool = False) -> QPushButton:
-        button = QPushButton(self)
-        if accent:
-            button.setProperty("accent", True)
-        if toggle:
-            button.setCheckable(True)
-            button.setProperty("toggleButton", True)
-        return button
-
-    def _wrap_panel(self, body: QWidget) -> QFrame:
-        panel = QFrame(self)
-        panel.setObjectName("PanelCard")
-        layout = QVBoxLayout(panel)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(8)
-        return_title = QLabel(panel)
-        return_subtitle = QLabel(panel)
-        return_title.setObjectName("PanelTitle")
-        return_subtitle.setObjectName("PanelSubtitle")
-        layout.addWidget(return_title)
-        layout.addWidget(return_subtitle)
-        layout.addWidget(body, stretch=1)
-        panel._panel_title = return_title  # type: ignore[attr-defined]
-        panel._panel_subtitle = return_subtitle  # type: ignore[attr-defined]
-        return panel
-
-    def _apply_shadow(self, widget: QWidget, blur: int = 24, alpha: int = 46) -> None:
-        shadow = QGraphicsDropShadowEffect(widget)
-        shadow.setBlurRadius(blur)
-        shadow.setOffset(0, 12)
-        shadow.setColor(QColor(120, 139, 166, alpha))
-        widget.setGraphicsEffect(shadow)
 
     def _bind_actions(self) -> None:
         self.generate_button.clicked.connect(self.generate_context)
@@ -451,17 +357,21 @@ class VibePaperDesktop(QMainWindow):
         self.compile_button.clicked.connect(self.compile_paper)
         self.refresh_button.clicked.connect(self.refresh_preview)
         self.open_formal_button.clicked.connect(self.open_formal_pdf)
-        self.files_button.toggled.connect(self._apply_panel_visibility)
-        self.source_button.toggled.connect(self._apply_panel_visibility)
-        self.log_button.toggled.connect(self._apply_panel_visibility)
+        self.files_button.clicked.connect(self.toggle_files_panel)
+        self.source_button.clicked.connect(self.toggle_source_panel)
+        self.log_button.clicked.connect(self.toggle_log_panel)
         self.lang_button.clicked.connect(self.toggle_language)
         self.file_tree.doubleClicked.connect(self.open_selected_file)
+        self.file_dock.visibilityChanged.connect(self._sync_toggle_buttons)
+        self.editor_dock.visibilityChanged.connect(self._sync_toggle_buttons)
+        self.log_dock.visibilityChanged.connect(self._sync_toggle_buttons)
 
     def _load_project_tree(self) -> None:
         self.tree_model.setRootPath(str(self.project_root))
         self.file_tree.setRootIndex(self.tree_model.index(str(self.project_root)))
-        if self.paper_dir.exists():
-            self.file_tree.expand(self.tree_model.index(str(self.paper_dir)))
+        paper_index = self.tree_model.index(str(self.paper_dir))
+        if paper_index.isValid():
+            self.file_tree.expand(paper_index)
 
     def _load_default_file(self) -> None:
         candidates = [
@@ -478,9 +388,9 @@ class VibePaperDesktop(QMainWindow):
     def _apply_language(self) -> None:
         text = TEXTS[self.language]
         self.setWindowTitle(f"{text['windowTitle']} - {self.project_root.name}")
-        self.title_label.setText(text["title"])
-        self.subtitle_label.setText(text["subtitle"])
-        self.project_chip.setText(f"{text['projectPrefix']}: {self.project_root.name}")
+        self.brand_label.setText("Vibe Paper")
+        self._reset_header_status()
+
         self.generate_button.setText(text["generate"])
         self.save_button.setText(text["save"])
         self.compile_button.setText(text["compile"])
@@ -490,45 +400,69 @@ class VibePaperDesktop(QMainWindow):
         self.source_button.setText(text["source"])
         self.log_button.setText(text["log"])
         self.lang_button.setText(text["lang"])
-        self.preview_title.setText(text["previewTitle"])
-        self.preview_subtitle.setText(text["previewSubtitle"])
-        self.files_panel._panel_title.setText(text["files"])  # type: ignore[attr-defined]
-        self.files_panel._panel_subtitle.setText(text["sourceSubtitle"])  # type: ignore[attr-defined]
-        self.source_panel._panel_title.setText(text["sourceTitle"])  # type: ignore[attr-defined]
-        self.source_panel._panel_subtitle.setText(text["sourceSubtitle"])  # type: ignore[attr-defined]
-        self.log_title.setText(text["logTitle"])
-        self.log_subtitle.setText(text["logSubtitle"])
+
+        self.file_dock.setWindowTitle(text["files"])
+        self.editor_dock.setWindowTitle(text["source"])
+        self.log_dock.setWindowTitle(text["log"])
+
         if self.current_file_rel:
             self.path_label.setText(f"{text['pathPrefix']}: {self.current_file_rel}")
         else:
-            self.path_label.setText(text["sourceSubtitle"])
-        if not self.page_pixmaps:
+            self.path_label.clear()
+
+        if not self.page_frames:
             self.preview_placeholder.setText(text["noPreview"])
-        self.preview_subtitle.setVisible(bool(text["previewSubtitle"]))
-        self.files_panel._panel_subtitle.setVisible(bool(text["sourceSubtitle"]))  # type: ignore[attr-defined]
-        self.source_panel._panel_subtitle.setVisible(bool(text["sourceSubtitle"]))  # type: ignore[attr-defined]
-        self.log_subtitle.setVisible(bool(text["logSubtitle"]))
-        self.status_bar.showMessage(text["statusReady"], 2500)
 
-    def _apply_panel_visibility(self) -> None:
-        files_visible = self.files_button.isChecked()
-        source_visible = self.source_button.isChecked()
-        log_visible = self.log_button.isChecked()
+        self._sync_toggle_buttons()
 
-        self.files_panel.setVisible(files_visible)
-        self.source_panel.setVisible(source_visible)
-        self.log_panel.setVisible(log_visible)
+    def _make_button(self, accent: bool = False, toggle: bool = False) -> QPushButton:
+        button = QPushButton(self.overlay_bar)
+        if accent:
+            button.setProperty("accent", True)
+        if toggle:
+            button.setCheckable(True)
+            button.setProperty("toggleButton", True)
+        button.setCursor(Qt.PointingHandCursor)
+        button.style().unpolish(button)
+        button.style().polish(button)
+        return button
 
-        available_width = max(960, self.width() - 80)
-        files_width = 280 if files_visible else 0
-        source_width = 460 if source_visible else 0
-        preview_width = max(760, available_width - files_width - source_width)
-        self.main_splitter.setSizes([files_width, source_width, preview_width])
+    def _apply_shadow(
+        self,
+        widget: QWidget,
+        blur: int = 24,
+        alpha: int = 34,
+        offset_x: int = 0,
+        offset_y: int = 8,
+    ) -> None:
+        shadow = QGraphicsDropShadowEffect(widget)
+        shadow.setBlurRadius(blur)
+        shadow.setOffset(offset_x, offset_y)
+        shadow.setColor(QColor(19, 33, 54, alpha))
+        widget.setGraphicsEffect(shadow)
 
-        available_height = max(680, self.height() - 150)
-        log_height = 220 if log_visible else 0
-        main_height = max(520, available_height - log_height)
-        self.body_splitter.setSizes([main_height, log_height])
+    def _sync_toggle_buttons(self) -> None:
+        self.files_button.blockSignals(True)
+        self.source_button.blockSignals(True)
+        self.log_button.blockSignals(True)
+        self.files_button.setChecked(self.file_dock.isVisible())
+        self.source_button.setChecked(self.editor_dock.isVisible())
+        self.log_button.setChecked(self.log_dock.isVisible())
+        self.files_button.blockSignals(False)
+        self.source_button.blockSignals(False)
+        self.log_button.blockSignals(False)
+
+    def toggle_files_panel(self) -> None:
+        self.file_dock.setVisible(not self.file_dock.isVisible())
+        self._sync_toggle_buttons()
+
+    def toggle_source_panel(self) -> None:
+        self.editor_dock.setVisible(not self.editor_dock.isVisible())
+        self._sync_toggle_buttons()
+
+    def toggle_log_panel(self) -> None:
+        self.log_dock.setVisible(not self.log_dock.isVisible())
+        self._sync_toggle_buttons()
 
     def toggle_language(self) -> None:
         self.language = "zh" if self.language == "en" else "en"
@@ -560,12 +494,17 @@ class VibePaperDesktop(QMainWindow):
         self.editor.document().setModified(False)
         self.path_label.setText(f"{TEXTS[self.language]['pathPrefix']}: {self.current_file_rel}")
         if show_panel:
-            self.source_button.setChecked(True)
-            self._apply_panel_visibility()
+            self.editor_dock.show()
+            self.raiseDockWidget(self.editor_dock)
+            self._sync_toggle_buttons()
+
+    def raiseDockWidget(self, dock: QDockWidget) -> None:  # noqa: N802 - Qt-ish helper
+        dock.raise_()
+        dock.activateWindow()
 
     def save_current_file(self) -> bool:
         if not self.current_file:
-            self._show_status(TEXTS[self.language]["sourceSubtitle"])
+            self._show_status(TEXTS[self.language]["source"])
             return False
         try:
             self.current_file.write_text(self.editor.toPlainText(), encoding="utf-8")
@@ -584,13 +523,14 @@ class VibePaperDesktop(QMainWindow):
             return
         self._load_project_tree()
         if self.current_file and self.current_file.resolve() == snapshot.resolve():
-            self.load_file(snapshot, show_panel=self.source_button.isChecked())
+            self.load_file(snapshot, show_panel=self.editor_dock.isVisible())
         self._show_status(TEXTS[self.language]["contextDone"])
 
     def compile_paper(self) -> None:
         if self.current_file and self.editor.document().isModified():
             if not self.save_current_file():
                 return
+        self._show_status(TEXTS[self.language]["compile"])
         result = compile_project_paper(self.project_root)
         try:
             write_project_snapshot(self.project_root)
@@ -601,8 +541,8 @@ class VibePaperDesktop(QMainWindow):
             self.refresh_preview(show_message=False)
             self._show_status(TEXTS[self.language]["compileDone"])
         else:
-            self.log_button.setChecked(True)
-            self._apply_panel_visibility()
+            self.log_dock.show()
+            self._sync_toggle_buttons()
             self._show_error(TEXTS[self.language]["compileError"], result.message)
             self.status_bar.showMessage(TEXTS[self.language]["compileFailed"], 5000)
         self._load_project_tree()
@@ -632,26 +572,29 @@ class VibePaperDesktop(QMainWindow):
             if image.isNull():
                 continue
             pixmap = QPixmap.fromImage(image)
-            page_card = QFrame(self.preview_container)
-            page_card.setObjectName("PageCard")
-            self._apply_shadow(page_card, blur=18, alpha=32)
-            page_layout = QVBoxLayout(page_card)
-            page_layout.setContentsMargins(14, 14, 14, 14)
+
+            page_frame = QFrame(self.preview_container)
+            page_frame.setObjectName("PageFrame")
+            self._apply_shadow(page_frame, blur=24, alpha=28, offset_y=8)
+            page_layout = QVBoxLayout(page_frame)
+            page_layout.setContentsMargins(18, 16, 18, 18)
             page_layout.setSpacing(8)
 
-            page_hint = QLabel(f"Page {page_number}", page_card)
-            page_hint.setObjectName("PanelSubtitle")
+            page_hint = QLabel(f"Page {page_number}", page_frame)
+            page_hint.setObjectName("PageHintLabel")
             page_hint.setAlignment(Qt.AlignCenter)
-            page_label = QLabel(page_card)
+            page_hint.setVisible(len(page_paths) > 1)
+
+            page_label = QLabel(page_frame)
             page_label.setAlignment(Qt.AlignCenter)
             page_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
             page_layout.addWidget(page_hint)
             page_layout.addWidget(page_label)
-            self.preview_layout.addWidget(page_card)
+            self.preview_layout.addWidget(page_frame)
 
-            page_card._page_label = page_label  # type: ignore[attr-defined]
-            self.page_cards.append(page_card)
+            page_frame._page_label = page_label  # type: ignore[attr-defined]
+            self.page_frames.append(page_frame)
             self.page_pixmaps.append(pixmap)
 
         self._rescale_preview_pages()
@@ -666,31 +609,48 @@ class VibePaperDesktop(QMainWindow):
         QDesktopServices.openUrl(QUrl.fromLocalFile(str(formal_pdf)))
 
     def _clear_preview_pages(self) -> None:
-        for page_card in self.page_cards:
-            self.preview_layout.removeWidget(page_card)
-            page_card.deleteLater()
-        self.page_cards = []
+        for page_frame in self.page_frames:
+            self.preview_layout.removeWidget(page_frame)
+            page_frame.deleteLater()
+        self.page_frames = []
         self.page_pixmaps = []
 
     def _rescale_preview_pages(self) -> None:
-        if not self.page_pixmaps or not self.page_cards:
+        if not self.page_pixmaps or not self.page_frames:
             return
-        viewport_width = max(360, self.preview_scroll.viewport().width() - 96)
-        for pixmap, page_card in zip(self.page_pixmaps, self.page_cards):
-            page_label = page_card._page_label  # type: ignore[attr-defined]
+        viewport_width = max(440, self.preview_scroll.viewport().width() - 70)
+        for pixmap, page_frame in zip(self.page_pixmaps, self.page_frames):
+            page_label = page_frame._page_label  # type: ignore[attr-defined]
             scaled = pixmap.scaledToWidth(viewport_width, Qt.SmoothTransformation)
             page_label.setPixmap(scaled)
             page_label.setMinimumHeight(scaled.height())
 
+    def _position_overlay_bar(self) -> None:
+        margin = 12
+        max_width = max(620, self.centralWidget().width() - margin * 2)
+        desired = min(max_width, self.overlay_bar.sizeHint().width())
+        height = self.overlay_bar.sizeHint().height()
+        x = max(margin, (self.centralWidget().width() - desired) // 2)
+        self.overlay_bar.setGeometry(x, margin, desired, height)
+        self.overlay_bar.raise_()
+
     def resizeEvent(self, event) -> None:  # noqa: N802 - Qt override
         super().resizeEvent(event)
-        self._apply_panel_visibility()
+        self._position_overlay_bar()
         self._rescale_preview_pages()
 
+    def _reset_header_status(self) -> None:
+        text = TEXTS[self.language]
+        self.meta_label.setText(f"{self.project_root.name} · {text['hint']} · {text['statusReady']}")
+
     def _show_status(self, message: str) -> None:
-        self.status_bar.showMessage(message, 3500)
+        self.meta_label.setText(f"{self.project_root.name} · {message}")
+        self.status_bar.showMessage(message, 3200)
+        self.status_timer.start(3200)
 
     def _show_error(self, title: str, message: str) -> None:
+        self.meta_label.setText(f"{self.project_root.name} · {title}")
+        self.status_timer.start(4000)
         QMessageBox.critical(self, title, message)
 
 

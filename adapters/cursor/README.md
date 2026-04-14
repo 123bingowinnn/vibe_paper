@@ -1,13 +1,13 @@
 # Cursor Adapter
 
-Attach Cursor to the experiment project root, not only to `paper/`.
+Attach Cursor to the experiment project root, not only to `paper/`. The canonical Vibe Paper instructions now live in the root `SKILL.md`; this folder only keeps Cursor-specific notes.
 
 Recommended workflow:
 
 1. Open the experiment project folder in Cursor.
 2. Read `paper/context/project_snapshot.md` before asking Cursor to draft or edit paper sections.
 3. Keep paper writing inside `paper/`.
-4. Use the local Vibe Paper desktop app to compile and preview PDFs.
+4. Use the local Vibe Paper popup preview script to compile and preview PDFs.
 
 Suggested Cursor rule summary:
 
